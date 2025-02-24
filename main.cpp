@@ -378,4 +378,5 @@ int main() {
         assistant.prompt(prompt);
         destray(pathToSolution);
     }
+    return 0;
 }
