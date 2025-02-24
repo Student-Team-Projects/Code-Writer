@@ -138,11 +138,11 @@ class Assistant {
     };
 
 public:
-    int verbose = 2;
+    int verbose;
     std::string solution_path;
 
     Assistant(std::string solution_path = pathToSolution,
-              std::string model = usedModel) : solution_path(solution_path), model(model) {
+              std::string model = usedModel, int verbose = 1) : solution_path(solution_path), model(model), verbose(verbose) {
         // solutionFile.open(solution_path);
     }
 
@@ -327,7 +327,7 @@ int main() {
         return 1;
     }
 
-    Assistant assistant(pathToSolution, usedModel);
+    Assistant assistant(pathToSolution, usedModel, verbose);
 
     assistant.prompt(createProblemStatementPrompt(problemDescription));
     destray(pathToSolution);
