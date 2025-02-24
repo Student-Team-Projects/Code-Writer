@@ -6,3 +6,4 @@
 g++ main.cpp -I[path to ollama-hpp]/singleheader -o main
 ./main
 ```
+
