@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    container_name: code-writer
+    volumes:
+      - .:/app
+    command: poetry run python src/Code-Writer/main.py

@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "Code-Writer"
+version = "0.1.0"
+description = "A collaborative Python project template"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{ include = "Code-Writer", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32"
+
+[tool.poetry.group.dev.dependencies]
+python = "^3.12"
+requests = "^2.32"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
