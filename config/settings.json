@@ -1,7 +1,7 @@
 {
-    "paths": {
+    "path": {
         "public_tests": "tests_public",
         "private_tests": "tests_secret",
-        "problem_description": "problem_description"
+        "problem_description": "problem_description.txt"
     }
 }
