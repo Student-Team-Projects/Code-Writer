@@ -4,3 +4,6 @@ SatoriGPTOutput.out
 solution
 main
 solution.cpp
+.venv
+.vscode
+.editorconfig
