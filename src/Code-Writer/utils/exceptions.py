@@ -8,3 +8,6 @@ class ExecutionError(Exception):
 
 class InvalidJSONException(Exception):
     pass
+
+class ConfigurationException(Exception):
+    pass

@@ -1,5 +1,5 @@
 import json
-from exceptions.invalid_json_error import InvalidJSONException
+from exceptions import InvalidJSONException
 
 class JSON_parser:
     @staticmethod
@@ -9,3 +9,12 @@ class JSON_parser:
             return json_str
         except (TypeError, OverflowError):
             raise InvalidJSONException(error_message)
+    
+    @staticmethod
+    def parse_json(json_content: str):
+        try:
+            return json.loads(json_content)
+        except json.JSONDecodeError as e:
+            raise InvalidJSONException(f"JSON Syntax Error: {str(e)}")
+        except TypeError:
+            raise InvalidJSONException("Input must be a string, not a file object.")
