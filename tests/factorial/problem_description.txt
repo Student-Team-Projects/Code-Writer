@@ -1,0 +1,8 @@
+# Factorial
+Given an integer n, compute its factorial. All methods are allowed.
+
+# Input
+The first line of input contains a single non-negative integer n ≤ 300000 — the number whose factorial should be computed.
+
+# Output
+Print one number — n! (the factorial of n).
