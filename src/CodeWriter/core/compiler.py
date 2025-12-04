@@ -45,9 +45,9 @@ class Compiler:
                 f"Compilation failed for '{source.name}':\n{e.stderr}"
             )
         except FileNotFoundError as e:
-            raise CompilationError(f"Compuler '{self.compiler}' not found.")
+            raise CompilationError(f"Compiler '{self.compiler}' not found.")
         except Exception as e:
-            raise CompilationError(f"Unknown error occured\n {{e.stderr}}")
+            raise CompilationError(f"Unknown error occurred\n {{e.stderr}}")
 
         return str(binary_path)
 

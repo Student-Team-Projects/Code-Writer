@@ -1,7 +1,7 @@
 import json
 from .exceptions import InvalidJSONException
 
-class JSON_parser:
+class JSON_Parser:
     @staticmethod
     def validate_json(text, error_message: str = 'Failed to parse JSON object'):
         try:

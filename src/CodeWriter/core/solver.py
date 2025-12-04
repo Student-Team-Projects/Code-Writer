@@ -1,4 +1,4 @@
-from ..utils.config_loader import config
+from ..utils.config_loader import config, Config
 from ..utils.file_validator import fileValidator
 from ..utils.exceptions import SolverException, CompilationError
 
@@ -11,11 +11,13 @@ from pathlib import Path
 
 import os
 
+BASE_DIR = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../.."))
 
 class Solver:
-    SYSTEM_PATH = "config/prompts/system.txt"
-    USER_TASK_PATH = "config/prompts/user_task.txt"
-    ERROR_FIX_PATH = "config/prompts/error_fix.txt"
+    SYSTEM_PATH = PROJECT_ROOT + "/config/prompts/system.txt"
+    USER_TASK_PATH = PROJECT_ROOT + "/config/prompts/user_task.txt"
+    ERROR_FIX_PATH = PROJECT_ROOT + "/config/prompts/error_fix.txt"
 
     def __init__(self, path):
         self.directory_path = path
@@ -31,6 +33,7 @@ class Solver:
         # TODO: set some fancy flags here
         self.compiler = Compiler()
         # TODO: set some reasonable timeout here
+        self.timeout  = config.get("parameters", "timeout")
         self.runner = Runner()
         self.tester = Tester()
 
@@ -41,7 +44,7 @@ class Solver:
         self.last_error = None
 
     def prepare_system(self):
-        self.system = fileValidator.read_file(self.SYSTEM_PATH)
+        self.system = fileValidator.read_file( self.SYSTEM_PATH)
 
     def prepare_user_task(self):
         task = fileValidator.read_file(self.USER_TASK_PATH)
@@ -76,25 +79,36 @@ class Solver:
 
         # TODO: set the argument properly
         self.client = Client(
-            base_url="some_url", system=self.system, model="some_model"
+            base_url= config.get("model", "base_url"), system=self.system, model= config.get("model", "model")
         )
 
         # TODO: uncomment it and return the result
-        # self.last_response = self.client.chat(self.user_task)
-        self.last_response = "some c++ code"
-
+        self.last_response = self.client.chat(self.user_task)
+        self.last_response = self.last_response.strip("`cpp")
         with open(self.solution_path, "w") as f:
             f.write(self.last_response)
 
         return self.last_response
+    def continue_chat(self):
+        if self.client is None:
+            raise SolverException("Conversation has not been started")
 
+        message = self.error_fix.format( **self.last_error)
+        self.last_response = self.client.chat(message)
+        self.last_response = self.last_response.strip("`cpp")
+        with open(self.solution_path, "w") as f:
+            f.write(self.last_response)
+        return self.last_response
     def validate(self, dir: str) -> bool:
 
         # Compile
         try:
             binary = self.compiler.compile(self.solution_path)
         except CompilationError as e:
-            self.last_error = "ERROR! Failed to compile to binary."
+            self.last_error =  {
+                "failure_type": "CompilationError",
+                "error_details": "Failed to compile to binary"
+            }
             return False
 
         # TODO: move these "in", "expected", etc params to config/settings.json
@@ -130,11 +144,12 @@ class Solver:
             result = self.tester.compare_files(expected_path, output_path)
             if not result:
                 self.last_error = {
+                    "failure_type": "Test Case Failure",
                     "input": input,
                     "expected": expected_path,
                     "output": output_path,
                     "error_file": error_path,
-                    "message": f"Mismatch in file: {filename}",
+                    "error_details": f"Mismatch in file: {filename}",
                 }
                 
                 print(self.last_error)
@@ -149,7 +164,7 @@ class Solver:
         return self.validate(self.tests_secret_path)
 
 # if __name__ == "__main__":
-#     solver = Solver("/home/arendaczh/Desktop/TCS/TCS-5/PP1/Code-Writer/tests/factorial")
-#     # print(solver.__getattribute__("user_task"))
-
+#     solver = Solver("")
+#     solver.begin_chat()
+#
 #     print(solver.validate_public())
