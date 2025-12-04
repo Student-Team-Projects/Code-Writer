@@ -3,5 +3,14 @@
         "public_tests": "tests_public",
         "private_tests": "tests_secret",
         "problem_description": "problem_description.txt"
+    },
+    "model": {
+      "base_url": "https://crucial-ethical-muskrat.ngrok-free.app",
+      "model": "qwen3:14b"
+    },
+    "parameters": {
+      "timeout": 10,
+      "stream": false,
+      "think": false
     }
 }

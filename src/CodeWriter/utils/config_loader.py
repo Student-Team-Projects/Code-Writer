@@ -1,8 +1,10 @@
 import os
 from .exceptions import ConfigurationException, InvalidJSONException
-from .json_parser import JSON_parser
+from .json_parser import JSON_Parser
 
-
+BASE_DIR = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../.."))
+SETTINGS_PATH = os.path.join(PROJECT_ROOT, "config", "settings.json")
 class Config:
     _instance = None
     _settings = None
@@ -13,13 +15,13 @@ class Config:
             cls._instance.load_settings()
         return cls._instance
 
-    def load_settings(self, path="config/settings.json"):
+    def load_settings(self, path=SETTINGS_PATH):
         if not os.path.exists(path):
             raise ConfigurationException(f"Settings file not found at: {path}")
 
         try:
             with open(path, "r") as file:
-                self._settings = JSON_parser.parse_json(file.read())
+                self._settings = JSON_Parser.parse_json(file.read())
         except InvalidJSONException:
             raise ConfigurationException("Failed to parse settings.json")
 
