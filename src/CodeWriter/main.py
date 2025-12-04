@@ -1,4 +1,21 @@
+from src.CodeWriter.core.solver import Solver
 
 if __name__ == "__main__":
-    path = input()
-    print("hello world")
+    path = input("Enter the path of file: ")
+    solver = Solver(path)
+    tries = 0
+    while tries < solver.timeout:
+
+        if tries == 0:
+            result = solver.begin_chat()
+        else:
+            result = solver.continue_chat()
+        public = solver.validate_public()
+        secret = solver.validate_secret()
+        if public and secret:
+            exit(0)
+        tries += 1
+    exit(1)
+
+
+
