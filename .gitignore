@@ -1,11 +1,9 @@
-compileErrors.txt
-diffOutput.txt
-SatoriGPTOutput.out
-solution
-main
-solution.cpp
 .venv
 .vscode
 .editorconfig
 *.out
 **/__pycache__/
+**/error/
+**/out/
+**/main.cpp
+**/main

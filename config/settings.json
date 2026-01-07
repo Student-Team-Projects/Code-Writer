@@ -2,7 +2,12 @@
     "path": {
         "public_tests": "tests_public",
         "private_tests": "tests_secret",
-        "problem_description": "problem_description.txt"
+        "problem_description": "problem_description.txt",
+        "source_file": "main.cpp",
+        "input_folder": "in",
+        "output_folder": "out",
+        "error_folder": "error",
+        "expected_output_folder": "expected"
     },
     "model": {
       "base_url": "https://crucial-ethical-muskrat.ngrok-free.app",

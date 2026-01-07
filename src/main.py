@@ -2,7 +2,7 @@ from CodeWriter.core.solver import Solver
 
 if __name__ == "__main__":
     # path = input("Enter the path of file: ")
-    path = "resources/template"
+    path = "resources/prime-reduction"
     solver = Solver(path)
     tries = 0
     while tries < solver.timeout:

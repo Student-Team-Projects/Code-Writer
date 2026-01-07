@@ -29,7 +29,7 @@ class Solver:
         self.problem_problem_path = (
             path + "/" + self.config.get("path", "problem_description")
         )
-        self.solution_path = path + "/main.cpp"
+        self.solution_path = path + "/" + self.config.get("path", "source_file")
 
         # TODO: set some fancy flags here
         self.compiler = Compiler()
@@ -55,14 +55,14 @@ class Solver:
         task = task.replace("{description}", description)
 
         # Example Input
-        input_path = os.path.join(self.public_tests_path, "in")
+        input_path = os.path.join(self.public_tests_path, self.config.get("path", "input_folder"))
         test_inputs = fileValidator.read_files(input_path)
 
         test_block_inputs = "\n-------------------------\n".join(test_inputs)
         task = task.replace("{example_input}", test_block_inputs)
 
         # Example Output
-        output_path = os.path.join(self.public_tests_path, "expected")
+        output_path = os.path.join(self.public_tests_path, self.config.get("path", "expected_output_folder"))
         test_outputs = fileValidator.read_files(output_path)
 
         test_block_outputs = "\n-------------------------\n".join(test_outputs)
@@ -113,10 +113,10 @@ class Solver:
             return False
 
         # TODO: move these "in", "expected", etc params to config/settings.json
-        input_dir = os.path.join(dir, "in")
-        expected_dir = os.path.join(dir, "expected")
-        error_dir = os.path.join(dir, "error")
-        output_dir = os.path.join(dir, "out")
+        input_dir = os.path.join(dir, self.config.get("path", "input_folder"))
+        expected_dir = os.path.join(dir, self.config.get("path", "expected_output_folder"))
+        error_dir = os.path.join(dir, self.config.get("path", "error_folder"))
+        output_dir = os.path.join(dir, self.config.get("path", "output_folder"))
 
         input_files = sorted(os.listdir(input_dir))
         expected_files = sorted(os.listdir(expected_dir))

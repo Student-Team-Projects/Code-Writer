@@ -1,1 +1,1 @@
-write a program to add 2 integers from input
+write a program to calculate factorial on a number, assume output is contained in unsigned long long
