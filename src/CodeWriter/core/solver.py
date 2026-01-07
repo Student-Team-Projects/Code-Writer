@@ -46,17 +46,10 @@ class Solver:
         self.last_error = None
 
     def prepare_system(self):
-        language = self.config.get("environment", "language")
-        compiler = self.config.get("environment", "compiler")
-        flags = self.config.get("environment", "flags").split(" ")
-        platform = self.config.get("environment", "platform")
-
         self.system = fileValidator.read_file(self.system_path)
 
-        self.system = self.system.replace("{language}", language)
-        self.system = self.system.replace("{compiler}", compiler)
-        self.system = self.system.replace("{platform}", platform)
-        self.system = self.system.replace("{flags}", flags)
+        self.system = self.system.format(**self.config.get("environment"))
+
 
     def prepare_user_task(self):
         task = fileValidator.read_file(self.user_task_path)
@@ -82,8 +75,8 @@ class Solver:
         self.user_task = task
 
     def prepare_error_fix(self):
-        error_fix = fileValidator.read_file(self.error_fix_pathq)
-        self.error_fix = error_fix
+        error_fix = fileValidator.read_file(self.error_fix_path)
+        self.error_fix = error_fix.format(**self.last_error)
 
     def begin_chat(self):
         if self.client is not None:
@@ -104,8 +97,8 @@ class Solver:
     def continue_chat(self):
         if self.client is None:
             raise SolverException("Conversation has not been started")
-
-        message = self.error_fix.format( **self.last_error)
+        self.prepare_error_fix()
+        message = self.error_fix
         self.last_response = self.client.chat(message)
         self.last_response = self.last_response.strip("`cpp")
         with open(self.solution_path, "w") as f:
@@ -163,7 +156,11 @@ class Solver:
                     "error_file": error_path,
                     "error_details": f"Mismatch in file: {filename}",
                 }
-                
+                self.last_error.error_details = (f" Mismatch in following test: \n---INPUT---\n" +
+                                                 fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
+                                                 fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
+                                                 fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
+                                                 fileValidator.read_file(error_path) + "\n")
                 print(self.last_error)
                 return False
 
