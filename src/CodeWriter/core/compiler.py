@@ -5,17 +5,17 @@ from typing import List, Optional
 
 from ..utils.file_validator import FileValidator
 from ..utils.exceptions import CompilationError
-
+from ..utils.config_loader import Config
 
 class Compiler:
-    def __init__(
-        self, compiler: str = "g++", default_flags: List[str] = ["-Wall", "-O2"]
-    ):
-        self.compiler = compiler
-        self.default_flags = default_flags
+    def __init__(self):
+        self.config = Config()
+        self.compiler = self.config.get("environment", "compiler")
+        self.default_flags = self.config.get("environment", "flags").split(" ")
 
-        if not shutil.which(compiler):
-            raise EnvironmentError(f"Compiler {compiler} not found.")
+
+        if not shutil.which(self.compiler):
+            raise EnvironmentError(f"Compiler {self.compiler} not found.")
 
     def compile(
         self, source_path: str, output_dir: Optional[str] = None, flags: List[str] = []
