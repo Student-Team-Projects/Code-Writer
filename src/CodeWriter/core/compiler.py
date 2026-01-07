@@ -5,6 +5,9 @@ from typing import List, Optional
 
 from ..utils.file_validator import FileValidator
 from ..utils.exceptions import CompilationError
+from ..utils.logger import get_logger, pretty_compilation_error
+
+logger = get_logger(__name__)
 
 
 class Compiler:
@@ -41,9 +44,9 @@ class Compiler:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         except subprocess.CalledProcessError as e:
             # Capture standard error from the compiler (e.g., syntax errors)
-            raise CompilationError(
-                f"Compilation failed for '{source.name}':\n{e.stderr}"
-            )
+            logger.error("Compilation failed for '%s'", source.name)
+            pretty_compilation_error(str(source), e.stderr)
+            raise CompilationError(f"Compilation failed for '{source.name}': see stderr above")
         except FileNotFoundError as e:
             raise CompilationError(f"Compiler '{self.compiler}' not found.")
         except Exception as e:

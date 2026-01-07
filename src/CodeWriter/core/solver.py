@@ -1,6 +1,7 @@
 from ..utils.config_loader import Config
 from ..utils.file_validator import fileValidator
 from ..utils.exceptions import SolverException, CompilationError
+from ..utils.logger import get_logger, pretty_print_message
 
 from .compiler import Compiler
 from .runner import Runner
@@ -13,6 +14,7 @@ import os
 
 BASE_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../.."))
+logger = get_logger(__name__)
 
 class Solver:
     SYSTEM_PATH = PROJECT_ROOT + "/config/prompts/system.txt"
@@ -159,9 +161,11 @@ class Solver:
         return True
 
     def validate_public(self) -> bool:
+        pretty_print_message("RUNNING","Running public tests...")
         return self.validate(self.public_tests_path)
     
     def validate_secret(self) -> bool:
+        pretty_print_message("RUNNING","Running secret tests...")
         return self.validate(self.tests_secret_path)
 
 # if __name__ == "__main__":

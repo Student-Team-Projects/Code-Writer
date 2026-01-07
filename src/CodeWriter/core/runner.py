@@ -3,6 +3,9 @@ import subprocess
 
 from ..utils.file_validator import FileValidator
 from ..utils.exceptions import ExecutionError
+from ..utils.logger import get_logger, pretty_print_message
+
+logger = get_logger(__name__)
 
 
 class Runner:
@@ -26,6 +29,7 @@ class Runner:
         cmd = [str(binary)]
 
         try:
+            logger.info("Running: %s (input=%s)", binary, input_file.name)
             with open(input_file, "r") as f_in, open(output_file, "w") as f_out, open(
                 error_file, "w"
             ) as f_err:
@@ -38,12 +42,23 @@ class Runner:
                     stdout=f_out,
                     stderr=f_err,
                 )
+            logger.debug("Execution finished, output=%s, error=%s", output_file, error_file)
 
         except subprocess.TimeoutExpired:
+            logger.error("Process timed out after %s seconds", self.timeout)
             raise ExecutionError(f"Process timed out after {self.timeout} seconds.")
         except subprocess.CalledProcessError as e:
-            raise ExecutionError(f"Runtime Error:\n{e.stderr}")
+            try:
+                with open(error_file, "r") as ef:
+                    stderr = ef.read()
+            except Exception:
+                stderr = e.stderr or ""
+
+            pretty_print_message("Runtime Error", stderr)
+            logger.exception("Runtime Error while running %s", binary)
+            raise ExecutionError(f"Runtime Error:\n{stderr}")
         except Exception as e:
+            logger.exception("Unknown error while executing %s: %s", binary, e)
             raise ExecutionError(f"Unknown Error occured: {e}")
 
 

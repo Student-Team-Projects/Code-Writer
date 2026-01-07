@@ -1,10 +1,10 @@
 from typing import List, Dict
 import requests
-import logging
 import json
 from ..utils.prompt import Prompt
+from ..utils.logger import get_logger
 
-logging.basicConfig(level=logging.DEBUG)
+logger = get_logger(__name__)
 class Client:
     def __init__(self, base_url: str, system: str, model: str, stream: bool = False)    :
         self.base_url = base_url
@@ -13,10 +13,10 @@ class Client:
     def chat(self, message: str):
         self.prompt.register_user_message(message)
         payload = self.prompt.get_payload()
-        logging.debug(payload)
+        logger.debug("Payload: %s", json.dumps(payload, indent=2))
 
         try:
-            logging.info(f"Sending request to {self.base_url}...")
+            logger.info(f"→ POST {self.base_url}/api/chat (CONNECTING TO MODEL)")
             response = requests.post(f"{self.base_url}/api/chat", json=payload)
 
             response.raise_for_status()
@@ -33,9 +33,9 @@ class Client:
             return result_text
 
         except requests.exceptions.RequestException as e:
-            print(f"An error occurred: {e}")
+            logger.error("Request failed: %s", e, exc_info=True)
         except Exception as e:
-            print(f"Unexpected Error Occured: {e}")
+            logger.exception("Unexpected error while chatting: %s", e)
 
 
 # if __name__ == "__main__":
