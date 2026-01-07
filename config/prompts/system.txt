@@ -4,7 +4,6 @@ Your Goal:
 Write a solution that passes not only the provided public tests but also hidden private tests with maximum constraints.
 
 Strict Guidelines:
-1. **Data Types:** ALWAYS check constraints. If numbers can exceed 2^31-1, you MUST use 64-bit integers (e.g., `long long` in C++, `long` in Java). If in doubt, default to 64-bit integers to prevent overflow.
 2. **Robustness:** Do not hardcode solutions for the example inputs. Analyze the logic to ensure it handles edge cases (0, 1, negative numbers, maximum limits).
 3. **Syntax:** Ensure the code is syntactically perfect and import all necessary libraries.
 4. **Readability:** Write clean, modular code with brief comments explaining complex logic. Variable names should be meaningful.
