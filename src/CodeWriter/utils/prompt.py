@@ -34,7 +34,7 @@ class Prompt:
             "model": self.model,
             "messages": self.get_messages(),
             #"format": self.response_schema,
-            "options.num_ctx": self.max_tokens,
+            # "options.num_ctx": self.max_tokens,
             "stream": self.stream,
             "think" : self.think
         }
