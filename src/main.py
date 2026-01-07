@@ -1,7 +1,8 @@
-from src.CodeWriter.core.solver import Solver
+from CodeWriter.core.solver import Solver
 
 if __name__ == "__main__":
-    path = input("Enter the path of file: ")
+    # path = input("Enter the path of file: ")
+    path = "resources/template"
     solver = Solver(path)
     tries = 0
     while tries < solver.timeout:

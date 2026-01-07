@@ -1,4 +1,4 @@
-from ..utils.config_loader import config, Config
+from ..utils.config_loader import Config
 from ..utils.file_validator import fileValidator
 from ..utils.exceptions import SolverException, CompilationError
 
@@ -22,18 +22,19 @@ class Solver:
     def __init__(self, path):
         self.directory_path = path
         self.client = None
+        self.config = Config()
 
-        self.public_tests_path = path + "/" + config.get("path", "public_tests")
-        self.tests_secret_path = path + "/" + config.get("path", "private_tests")
+        self.public_tests_path = path + "/" + self.config.get("path", "public_tests")
+        self.tests_secret_path = path + "/" + self.config.get("path", "private_tests")
         self.problem_problem_path = (
-            path + "/" + config.get("path", "problem_description")
+            path + "/" + self.config.get("path", "problem_description")
         )
         self.solution_path = path + "/main.cpp"
 
         # TODO: set some fancy flags here
         self.compiler = Compiler()
         # TODO: set some reasonable timeout here
-        self.timeout  = config.get("parameters", "timeout")
+        self.timeout  = self.config.get("parameters", "timeout")
         self.runner = Runner()
         self.tester = Tester()
 
@@ -79,7 +80,7 @@ class Solver:
 
         # TODO: set the argument properly
         self.client = Client(
-            base_url= config.get("model", "base_url"), system=self.system, model= config.get("model", "model")
+            base_url= self.config.get("model", "base_url"), system=self.system, model= self.config.get("model", "model")
         )
 
         # TODO: uncomment it and return the result

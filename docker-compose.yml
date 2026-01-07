@@ -6,4 +6,4 @@ services:
     container_name: code-writer
     volumes:
       - .:/app
-    command: poetry run python src/Code-Writer/main.py
+    command: poetry run python src/main.py
