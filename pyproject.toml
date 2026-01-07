@@ -9,6 +9,7 @@ packages = [{ include = "Code-Writer", from = "src" }]
 [tool.poetry.dependencies]
 python = "^3.12"
 requests = "^2.32"
+rich = "^13.5.0"
 
 [tool.poetry.group.dev.dependencies]
 python = "^3.12"

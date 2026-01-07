@@ -4,6 +4,13 @@ services:
       context: .
       dockerfile: app.Dockerfile
     container_name: code-writer
+    stdin_open: true
+    tty: true
+    working_dir: /app
+    environment:
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+      - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
     command: poetry run python src/main.py

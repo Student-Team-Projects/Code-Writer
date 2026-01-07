@@ -1,0 +1,27 @@
+Z polecenia Tajnego Centrum Śledczego (TCS) agent 000 000 111 zajmuje się inwigilacją groźnej organizacji dążącej do władzy nad światem.
+
+Ostatnio odkrył serwer, na którym mafia umieszcza instrukcje dla trzyosobowych zespołów szalonych naukowców.
+
+Ponieważ konspiratorzy są paranoiczni, dostęp do każdego rozkazu przez każdego naukowca wymaga osobnego hasła; każde hasło pozwala zalogował się tylko raz, a po pobraniu rozkazu przez cały zespół jest on usuwany. Próby rozszyfrowania rozkazów spełzły na niczym.
+
+Na szczęście, analizując przepływ danych do serwera nasz bohater z właściwą sobie błyskotliwością zauważył, że każda trójka haseł to reprezentacje PREORDER, INORDER oraz POSTORDER jakiegoś drzewa binarnego.
+
+Jego zadanie jest w tym momencie proste - po umieszczeniu każdego nowego rozkazu musi przechwycić hasła dwu z naukowców, odtworzyć hasło trzeciego z nich, zalogować się i pobrać informację, zanim trzeci zdąży zalogować się i usunąć plik z serwera.
+
+Twoim zadaniem jest wczytanie dwóch opisów pewnego drzewa binarnego i wypisanie trzeciego opisu, zgodnie z trzecim, pozostałym porządkiem.
+
+Uwaga: Zabronione jest zastosowanie szablonów z biblioteki STL, np. map, sort, itp. oraz budowanie drzewa.
+
+Wejście
+Pierwsza linia wejścia zawiera liczbę naturalną z (1≤z≤109), liczbę zestawów danych, których opisy występują kolejno po sobie.
+
+Opis jednego zestawu jest następujący:
+
+Pierwsza linia zestawu zawiera liczbę całkowitą n (1⩽n⩽100000) będącą liczbą węzłów drzewa.
+
+Druga linia opisuje rodzaj pierwszego porządku (jest to jedno ze słów: PREORDER, INORDER, POSTORDER). Trzecia linia zawiera n parami różnych kluczy wypisanych w pierwszym porządku. Klucze są 32-bitowymi liczbami (ze znakiem).
+
+Czwarta i piąta linia opisują drugi porządek (analogicznie jak pierwszy). Można założyć, że rodzaj drugiego porządku jest różny od pierwszego.
+
+Wyjście
+Dla każdego zestawu danych wypisz w jednej linii klucze wierzchołków drzewa, zgodnie z trzecim (pozostałym) porządkiem. Jeżeli wynik nie jest jednoznaczny, należy wypisać ERROR.
