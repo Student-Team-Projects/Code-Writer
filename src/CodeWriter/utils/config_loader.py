@@ -36,8 +36,5 @@ class Config:
             return data
         except AttributeError:
             raise ConfigurationException(f"Section {section} missing in settings")
-
 config = Config()
 
-if __name__ == "__main__":
-    print(config.get('paths'))

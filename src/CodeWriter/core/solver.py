@@ -1,6 +1,6 @@
 from ..utils.config_loader import Config
 from ..utils.file_validator import fileValidator
-from ..utils.exceptions import SolverException, CompilationError
+from ..utils.exceptions import ExecutionError, SolverException, CompilationError
 from ..utils.logger import get_logger, pretty_print_message
 
 from .compiler import Compiler
@@ -23,9 +23,9 @@ class Solver:
         self.client = None
         self.config = Config()
 
-        self.system_path = PROJECT_ROOT + self.config.get("environment", "system_path")
-        self.user_task_path = PROJECT_ROOT + self.config.get("environment", "user_task_path")
-        self.error_fix_path = PROJECT_ROOT + self.config.get("environment", "error_fix_path")
+        self.system_path = PROJECT_ROOT + self.config.get("path", "system_path")
+        self.user_task_path = PROJECT_ROOT + self.config.get("path", "user_task_path")
+        self.error_fix_path = PROJECT_ROOT + self.config.get("path", "error_fix_path")
 
         self.public_tests_path = path + "/" + self.config.get("path", "public_tests")
         self.tests_secret_path = path + "/" + self.config.get("path", "private_tests")
@@ -42,23 +42,15 @@ class Solver:
         self.tester = Tester()
 
         self.prepare_system()
-        self.prepare_error_fix()
         self.prepare_user_task()
 
         self.last_error = None
 
     def prepare_system(self):
-        language = self.config.get("environment", "language")
-        compiler = self.config.get("environment", "compiler")
-        flags = self.config.get("environment", "flags").split(" ")
-        platform = self.config.get("environment", "platform")
-
         self.system = fileValidator.read_file(self.system_path)
 
-        self.system = self.system.replace("{language}", language)
-        self.system = self.system.replace("{compiler}", compiler)
-        self.system = self.system.replace("{platform}", platform)
-        self.system = self.system.replace("{flags}", flags)
+        self.system = self.system.format(**self.config.get("environment"))
+
 
     def prepare_user_task(self):
         task = fileValidator.read_file(self.user_task_path)
@@ -84,8 +76,8 @@ class Solver:
         self.user_task = task
 
     def prepare_error_fix(self):
-        error_fix = fileValidator.read_file(self.error_fix_pathq)
-        self.error_fix = error_fix
+        error_fix = fileValidator.read_file(self.error_fix_path)
+        self.error_fix = error_fix.format(**self.last_error)
 
     def begin_chat(self):
         if self.client is not None:
@@ -106,8 +98,8 @@ class Solver:
     def continue_chat(self):
         if self.client is None:
             raise SolverException("Conversation has not been started")
-
-        message = self.error_fix.format( **self.last_error)
+        self.prepare_error_fix()
+        message = self.error_fix
         self.last_response = self.client.chat(message)
         self.last_response = self.last_response.strip("`cpp")
         with open(self.solution_path, "w") as f:
@@ -121,7 +113,7 @@ class Solver:
         except CompilationError as e:
             self.last_error =  {
                 "failure_type": "CompilationError",
-                "error_details": "Failed to compile to binary"
+                "error_details": "Failed to compile to binary : " + str(e),
             }
             return False
 
@@ -144,16 +136,29 @@ class Solver:
         for filename in input_files:
             # Run
             input_path = os.path.join(input_dir, filename)
-            output_path = os.path.join(output_dir, filename)
-            error_path = os.path.join(error_dir, filename)
-
-            self.runner.run(binary, input_path, output_path, error_path)
-
-            # Test
-            input_path = os.path.join(input_dir, filename)
             expected_path = os.path.join(expected_dir, filename)
             output_path = os.path.join(output_dir, filename)
             error_path = os.path.join(error_dir, filename)
+
+            try:
+                self.runner.run(binary, input_path, output_path, error_path)
+            except ExecutionError as e:
+                self.last_error = {
+                    "failure_type": "ExecutionError",
+                    "input": input_path,
+                    "output": output_path,
+                    "error_file": error_path,
+                    "error_details": str(e),
+                }
+                self.last_error["error_details"] = (f" Runtime error: {str(e)}\n While running following test: \n---INPUT---\n" +
+                                                 fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
+                                                 fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
+                                                 fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
+                                                 fileValidator.read_file(error_path) + "\n")
+                return False
+
+            # Test
+            
 
             result = self.tester.compare_files(expected_path, output_path)
             if not result:
@@ -165,7 +170,11 @@ class Solver:
                     "error_file": error_path,
                     "error_details": f"Mismatch in file: {filename}",
                 }
-                
+                self.last_error["error_details"] = (f" Mismatch in following test: \n---INPUT---\n" +
+                                                 fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
+                                                 fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
+                                                 fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
+                                                 fileValidator.read_file(error_path) + "\n")
                 print(self.last_error)
                 return False
 

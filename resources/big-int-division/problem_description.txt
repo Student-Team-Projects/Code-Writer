@@ -1,0 +1,4 @@
+Division
+Given two large integers, where the first is greater than the second, find their quotient rounded down to the nearest integer.
+InputThe input consists of exactly two lines containing the integers $A$ and $B$, respectively, satisfying the conditions:$1 \le B < A \le 10^{500,000}$.Output
+On the output, print the quotient $A/B$, rounded down to the nearest integer.
