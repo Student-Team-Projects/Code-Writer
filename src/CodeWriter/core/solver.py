@@ -17,14 +17,15 @@ PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../.."))
 logger = get_logger(__name__)
 
 class Solver:
-    SYSTEM_PATH = PROJECT_ROOT + "/config/prompts/system.txt"
-    USER_TASK_PATH = PROJECT_ROOT + "/config/prompts/user_task.txt"
-    ERROR_FIX_PATH = PROJECT_ROOT + "/config/prompts/error_fix.txt"
 
-    def __init__(self, path):
+    def __init__(self, path : str):
         self.directory_path = path
         self.client = None
         self.config = Config()
+
+        self.system_path = PROJECT_ROOT + self.config.get("environment", "system_path")
+        self.user_task_path = PROJECT_ROOT + self.config.get("environment", "user_task_path")
+        self.error_fix_path = PROJECT_ROOT + self.config.get("environment", "error_fix_path")
 
         self.public_tests_path = path + "/" + self.config.get("path", "public_tests")
         self.tests_secret_path = path + "/" + self.config.get("path", "private_tests")
@@ -47,10 +48,20 @@ class Solver:
         self.last_error = None
 
     def prepare_system(self):
-        self.system = fileValidator.read_file( self.SYSTEM_PATH)
+        language = self.config.get("environment", "language")
+        compiler = self.config.get("environment", "compiler")
+        flags = self.config.get("environment", "flags").split(" ")
+        platform = self.config.get("environment", "platform")
+
+        self.system = fileValidator.read_file(self.system_path)
+
+        self.system = self.system.replace("{language}", language)
+        self.system = self.system.replace("{compiler}", compiler)
+        self.system = self.system.replace("{platform}", platform)
+        self.system = self.system.replace("{flags}", flags)
 
     def prepare_user_task(self):
-        task = fileValidator.read_file(self.USER_TASK_PATH)
+        task = fileValidator.read_file(self.user_task_path)
         description = fileValidator.read_file(self.problem_problem_path)
 
         # Description
@@ -73,7 +84,7 @@ class Solver:
         self.user_task = task
 
     def prepare_error_fix(self):
-        error_fix = fileValidator.read_file(self.ERROR_FIX_PATH)
+        error_fix = fileValidator.read_file(self.error_fix_pathq)
         self.error_fix = error_fix
 
     def begin_chat(self):
