@@ -2,7 +2,7 @@ from typing import List, Dict
 import requests
 import json
 from ..utils.prompt import Prompt
-from ..utils.logger import get_logger
+from ..utils.logger import get_logger, pretty_display_code
 
 logger = get_logger(__name__)
 class Client:
@@ -28,6 +28,8 @@ class Client:
             # TODO: retrieve text message from result
 
             self.prompt.register_assistant_message(result_text)
+            logger.info("Here is your generated code:")
+            pretty_display_code(code=result_text, language="cpp", title="Generated Code")
 
             # TODO: return the generated code
             return result_text
