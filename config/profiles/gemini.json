@@ -18,7 +18,7 @@
         "provider": "gemini",
         "base_url": "https://generativelanguage.googleapis.com",
         "model": "gemini-2.0-flash",
-        "api_key": "AIzaSyBpr_mg3AEVl5zXqgwlJxQf4PY8eouQKks"
+        "api_key": ""
     },
     "parameters": {
         "timeout": 30,
