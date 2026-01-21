@@ -7,3 +7,5 @@
 
 * This is a temporary README.
 * Further details will be added later.
+
+* To run the app, paste `docker compose run --rm app`

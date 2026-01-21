@@ -1,0 +1,1 @@
+Read a number from standard input, and print the factorial of that number

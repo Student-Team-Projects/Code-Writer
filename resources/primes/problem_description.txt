@@ -1,0 +1,9 @@
+Sfinks zastąpił Ci drogę i nie pozwoli przejść dalej, jeśli nie rozwiążesz jego zagadki. Sfinks jest, na szczęście, dość monotonnym stworzeniem i zna tylko zagadki typu “Czy liczba x jest pierwsza?”
+
+Wejście
+Pierwsza linia wejścia zawiera liczbę całkowitą z (1≤z≤2000) – liczbę zestawów danych, których opisy wystepują kolejno po sobie. Opis jednego zestawu jest następujący:
+
+Jedna liczba całkowita dodatnia 2≤x≤1018.
+
+Wyjście
+Dla każdego zestawu danych wypisz TAK, jeśli x jest liczbą pierwszą i NIE, jeśli nie jest.

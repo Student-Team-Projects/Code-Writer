@@ -1,0 +1,23 @@
+W kablu RJ-45, zwanym popularnie “skrętką”, jest 8 różnokolorowych przewodów, a prawidłowe określenie ich kolejności w celu zaciśnięcia wtyczki weszło już do kanonu internetowego folkloru.
+
+Sieć wydziałowa jest drzewem złożonym z n routerów połączonych kablami RJ-45. Każdy z routerów przekazuje informacje w następujący sposób: jeśli na j-tym styku któregoś z gniazd zostanie wykryty sygnał, to router powieli go na j-tych stykach pozostałych gniazd.
+
+Mimo że router poprawnie przekazuje sygnały między gniazdami, to kolejność przewodów w kablach jest pomieszana! Niech u i v będą dwoma routerami, które są bezpośrednio połączone. Kolejność przewodów w kablu je łączącym możemy opisać permutacją σ:{1,2,…,8}→{1,2,…,8} – j-ty styk routera u połączony jest ze stykiem σj routera v.
+
+Twoim zadaniem jest obsługiwać dwa rodzaje zapytań:
+
+Mając dane routery u i v, ustalić w jaki sposób ich styki są połączone. Formalnie, należy ustalić permutację σ taką, że sygnał z j-tego styku routera u trafi do σj-tego styku routera v.
+Zmiana permutacji przewodów dla danego kabla.
+Wejście
+Pierwsza linia wejścia zawiera liczbę zestawów danych z (1≤z≤109). W kolejnych liniach następują opisy zestawów.
+
+Pierwsza linia zestawu danych zawiera liczbę całkowitą n (2≤n≤200000) – liczbę routerów w sieci. Kolejne n−1 linii zawiera opisy połączeń.
+
+i-ta linia zawiera 9 liczb całkowitych: pi,ai,1,…,ai,8 (1≤pi≤i, {ai,1,…,ai,8}={1,…,8}) – opis połączenia między routerem i+1 oraz pi. Wartość ai,j oznacza numer styku gniazda routera i+1 pod który podpięty został j-ty styk routera pi.
+
+Kolejna linia zestawu zawiera liczbę całkowitą q (1≤q≤200000) – liczbę zapytań. Kolejne q linii zawiera ich opisy w postaci:
+
+1 v a1 ... a8 – zmiana permutacji przewodów dla połączenia między routerem pv i v
+2 u v – zapytanie o permutację przewodów między routerami u oraz v
+Wyjście
+Dla każdego zapytania typu 2, wypisz jedną linię zawierającą permutację b1,…,b8∈{1,…,8}. Wartość bj powinna być numerem styku drugiego routera, do którego dostarczony zostanie sygnał z j-tego styku routera pierwszego. Do rozwiązania tego zadania musisz uzyć drzewa przedziałowego.
