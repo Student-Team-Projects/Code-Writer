@@ -105,15 +105,17 @@ class Solver:
     def continue_chat(self):
         if self.client is None:
             raise SolverException("Conversation has not been started")
+
+        #prepare error message
         self.prepare_error_fix()
         message = self.error_fix
+
         self.last_response = self.client.chat(message)
         self.last_response = self.last_response.strip("`cpp")
         with open(self.solution_path, "w") as f:
             f.write(self.last_response)
         return self.last_response
     def validate(self, dir: str, secret : bool) -> bool:
-
         # Compile
         try:
             binary = self.compiler.compile(self.solution_path)
@@ -135,8 +137,6 @@ class Solver:
 
         files_count = len(input_files)
 
-        # TODO: validate the folder before compilation. Names and everything
-        # Create a class to validate it before the Solver class instance is even created
         if len(expected_files) != files_count:
             raise SolverException("Invalid input folder.")
 
@@ -162,8 +162,6 @@ class Solver:
                                         fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
                                         fileValidator.read_file(error_path) + "\n")}
                 return False
-
-            # Test
             
 
             result = self.tester.compare_files(expected_path, output_path)
@@ -180,7 +178,6 @@ class Solver:
                                             fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
                                             fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
                                             fileValidator.read_file(error_path) + "\n")}
-                print(self.last_error)
                 return False
 
         return True

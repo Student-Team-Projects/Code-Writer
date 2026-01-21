@@ -56,20 +56,3 @@ class Compiler:
         return str(binary_path)
 
 
-# if __name__ == "__main__":
-#     builder = Compiler(compiler="g++", default_flags=["-O2"])
-#     # Compile the file
-#     try:
-#         print("Compiling...")
-#         binary_location = builder.compile("hello.cpp")
-
-#         print(f"Success! Binary created at: {binary_location}")
-
-#         # # Run the resulting binary to prove it works
-#         # print("\n--- Running Binary ---")
-#         # subprocess.run([binary_location])
-
-#     except CompilationError as e:
-#         print(f"Error: {e}")
-#     except Exception as e:
-#         print(f"Unexpected error: {e}")

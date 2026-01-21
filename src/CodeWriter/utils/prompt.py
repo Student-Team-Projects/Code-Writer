@@ -5,7 +5,7 @@ from .json_parser import JSON_Parser
 
 class Prompt:
     def __init__(self, system: str,  model: str, max_tokens: int = 2048, stream: bool = False, think: bool = False):
-        self.model = model # TODO: validate model before setting it up
+        self.model = model #
         self.system = system
         self.messages = []
         self.response_schema = None

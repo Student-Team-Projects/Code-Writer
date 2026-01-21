@@ -97,11 +97,3 @@ class Client:
 
 
 
-# if __name__ == "__main__":
-#     client = Client(
-#         base_url="https://crucial-ethical-muskrat.ngrok-free.app",
-#         system="You are a cat",
-#         model="qwen3:14b",
-#     )
-#
-#     client.chat("Tell me a secret")
