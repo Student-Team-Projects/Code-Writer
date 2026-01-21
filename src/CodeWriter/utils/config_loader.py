@@ -18,6 +18,11 @@ class Config:
         if cls._instance is None:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.load_settings()
+        else:
+            # Always check if profile env var has changed and reload if needed
+            current_profile = os.getenv("CODEWRITER_PROFILE")
+            if current_profile and current_profile != cls._instance._active_profile:
+                cls._instance.load_settings()
         return cls._instance
 
     def load_settings(self, path=SETTINGS_PATH):
