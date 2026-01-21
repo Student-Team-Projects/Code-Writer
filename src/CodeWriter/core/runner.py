@@ -62,18 +62,3 @@ class Runner:
             raise ExecutionError(f"Unknown Error occured: {e}")
 
 
-# if __name__ == "__main__":
-#     runner = Runner(timeout=5)
-
-#     print("--- Executing Runner ---")
-#     try:
-#         # We explicitly define output paths to ensure validate_and_create works
-#         runner.run(
-#             binary_path="./hello",
-#             input="data_in.txt",
-#             output="results/final_output.txt",
-#             error="logs/error_log.txt",
-#         )
-#         print("Execution finished successfully.")
-#     except Exception as e:
-#         print(f"Test Failed with Exception: {e}")
