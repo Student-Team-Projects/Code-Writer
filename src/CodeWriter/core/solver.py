@@ -34,9 +34,7 @@ class Solver:
         )
         self.solution_path = path + "/" + self.config.get("path", "source_file")
 
-        # TODO: set some fancy flags here
         self.compiler = Compiler()
-        # TODO: set some reasonable timeout here
         self.timeout  = self.config.get("parameters", "timeout")
         self.runner = Runner()
         self.tester = Tester()
@@ -77,7 +75,10 @@ class Solver:
 
     def prepare_error_fix(self):
         error_fix = fileValidator.read_file(self.error_fix_path)
+        if self.last_error.secret:
+            self.last_error.error_details = "This test is secret"
         self.error_fix = error_fix.format(**self.last_error)
+
 
     def begin_chat(self):
         if self.client is not None:
@@ -95,7 +96,6 @@ class Solver:
             api_key=api_key
         )
 
-        # TODO: uncomment it and return the result
         self.last_response = self.client.chat(self.user_task)
         self.last_response = self.last_response.strip("`cpp")
         with open(self.solution_path, "w") as f:
@@ -112,7 +112,7 @@ class Solver:
         with open(self.solution_path, "w") as f:
             f.write(self.last_response)
         return self.last_response
-    def validate(self, dir: str) -> bool:
+    def validate(self, dir: str, secret : bool) -> bool:
 
         # Compile
         try:
@@ -124,7 +124,7 @@ class Solver:
             }
             return False
 
-        # TODO: move these "in", "expected", etc params to config/settings.json
+
         input_dir = os.path.join(dir, self.config.get("path", "input_folder"))
         expected_dir = os.path.join(dir, self.config.get("path", "expected_output_folder"))
         error_dir = os.path.join(dir, self.config.get("path", "error_folder"))
@@ -150,18 +150,17 @@ class Solver:
             try:
                 self.runner.run(binary, input_path, output_path, error_path)
             except ExecutionError as e:
-                self.last_error = {
-                    "failure_type": "ExecutionError",
-                    "input": input_path,
-                    "output": output_path,
-                    "error_file": error_path,
-                    "error_details": str(e),
-                }
-                self.last_error["error_details"] = (f" Runtime error: {str(e)}\n While running following test: \n---INPUT---\n" +
-                                                 fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
-                                                 fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
-                                                 fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
-                                                 fileValidator.read_file(error_path) + "\n")
+                self.last_error = {"failure_type": "ExecutionError",
+                                   "input": input_path,
+                                   "output": output_path,
+                                   "error_file": error_path,
+                                   "secret": secret,
+                                   "error_details": (
+                                        f" Runtime error: {str(e)}\n While running following test: \n---INPUT---\n" +
+                                        fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
+                                        fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
+                                        fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
+                                        fileValidator.read_file(error_path) + "\n")}
                 return False
 
             # Test
@@ -169,19 +168,18 @@ class Solver:
 
             result = self.tester.compare_files(expected_path, output_path)
             if not result:
-                self.last_error = {
-                    "failure_type": "Test Case Failure",
-                    "input": input,
-                    "expected": expected_path,
-                    "output": output_path,
-                    "error_file": error_path,
-                    "error_details": f"Mismatch in file: {filename}",
-                }
-                self.last_error["error_details"] = (f" Mismatch in following test: \n---INPUT---\n" +
-                                                 fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
-                                                 fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
-                                                 fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
-                                                 fileValidator.read_file(error_path) + "\n")
+                self.last_error = {"failure_type": "Test Case Failure",
+                                   "input": input,
+                                   "expected": expected_path,
+                                   "output": output_path,
+                                   "error_file": error_path,
+                                   "secret": secret,
+                                   "error_details": (
+                                            f" Mismatch in following test: \n---INPUT---\n" +
+                                            fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
+                                            fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
+                                            fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
+                                            fileValidator.read_file(error_path) + "\n")}
                 print(self.last_error)
                 return False
 
@@ -189,14 +187,9 @@ class Solver:
 
     def validate_public(self) -> bool:
         pretty_print_message("RUNNING","Running public tests...")
-        return self.validate(self.public_tests_path)
+        return self.validate(self.public_tests_path, False)
     
     def validate_secret(self) -> bool:
         pretty_print_message("RUNNING","Running secret tests...")
-        return self.validate(self.tests_secret_path)
+        return self.validate(self.tests_secret_path, True)
 
-# if __name__ == "__main__":
-#     solver = Solver("")
-#     solver.begin_chat()
-#
-#     print(solver.validate_public())
