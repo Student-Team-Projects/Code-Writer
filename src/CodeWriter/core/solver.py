@@ -83,9 +83,16 @@ class Solver:
         if self.client is not None:
             raise SolverException("Conversation has been already started.")
 
-        # TODO: set the argument properly
+        # Get model configuration from settings
+        provider = self.config.get("model", "provider") or "ollama"
+        api_key = self.config.get("model", "api_key") or None
+        
         self.client = Client(
-            base_url= self.config.get("model", "base_url"), system=self.system, model= self.config.get("model", "model")
+            base_url=self.config.get("model", "base_url"),
+            system=self.system,
+            model=self.config.get("model", "model"),
+            provider=provider,
+            api_key=api_key
         )
 
         # TODO: uncomment it and return the result
