@@ -75,8 +75,8 @@ class Solver:
 
     def prepare_error_fix(self):
         error_fix = fileValidator.read_file(self.error_fix_path)
-        if self.last_error.secret:
-            self.last_error.error_details = "This test is secret"
+        if self.last_error["secret"]:
+            self.last_error["error_details"] = "This test is secret"
         self.error_fix = error_fix.format(**self.last_error)
 
 
@@ -123,7 +123,8 @@ class Solver:
             self.last_error =  {
                 "failure_type": "CompilationError",
                 "error_details": "Failed to compile to binary : " + str(e),
-            }
+                "secret": secret
+            } 
             return False
 
 
