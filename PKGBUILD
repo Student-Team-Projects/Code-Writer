@@ -3,55 +3,57 @@ pkgver=0.1.0
 pkgrel=1
 pkgdesc="AI-powered code solver — Code Writer"
 arch=(x86_64)
-url="https://example.local/"
-license=('custom')
+url="https://github.com/youruser/code-writer"
+license=('MIT')
 depends=('python')
 makedepends=('python-pip' 'python-virtualenv')
-source=("./src" "./config")
-
-build() {
-	return 0
-}
+# We leave source empty because we are building from the local directory
+source=()
 
 package() {
-	# Create package layout: place package root contents from `src/` at /opt/code-writer
-	mkdir -p "$pkgdir/opt/$pkgname"
-	# Copy Python application files from src/ so main.py ends up at /opt/code-writer/main.py
-	# Debug: show what makepkg provided in $srcdir
-	echo "--- DEBUG: srcdir="$srcdir" ---"
-	ls -la "$srcdir" || true
-	echo "--- DEBUG: listing $srcdir/src ---"
-	ls -la "$srcdir/src" || true
-	if [ -d "$srcdir/src" ]; then
-		mkdir -p "$pkgdir/opt/$pkgname"
-		# copy contents (including hidden files) from the source src/ into package opt dir
-		cp -a "$srcdir/src/." "$pkgdir/opt/$pkgname/"
-	else
-		echo "Error: source directory $srcdir/src not found"
-		return 1
-	fi
-	# Also copy config directory if present at project root
-	if [ -d "$srcdir/config" ]; then
-		cp -a "$srcdir/config" "$pkgdir/opt/$pkgname/"
-	fi
+    # 1. Prepare directories
+    install -dm755 "$pkgdir/opt/$pkgname/src"
+    install -dm755 "$pkgdir/usr/bin"
 
-	# Create a virtual environment inside the package and install Python deps there.
-	if command -v python >/dev/null 2>&1; then
-		python -m venv "$pkgdir/opt/$pkgname/venv"
-		# Use the venv pip to install dependencies into the venv
-		"$pkgdir/opt/$pkgname/venv/bin/python" -m pip install --upgrade pip setuptools || true
-		"$pkgdir/opt/$pkgname/venv/bin/pip" install --no-deps --upgrade \
-			'requests>=2.32' 'rich>=13.5.0' 'google-genai>=0.1.0' || echo "pip install into venv failed"
-	else
-		echo "Warning: python not available — venv and dependencies not installed."
-	fi
+    # 2. Copy the project files from your current directory ($startdir)
+    # We copy 'src', 'resources', and any config folders
+    # Using $startdir ensures we get files outside the (empty) srcdir
+    cp -rp "$startdir/src"/* "$pkgdir/opt/$pkgname/src"
+    
+    # Copy config and resources if they exist
+    [ -d "$startdir/config" ] && cp -rp "$startdir/config" "$pkgdir/opt/$pkgname/"
+    [ -d "$startdir/resources" ] && cp -rp "$startdir/resources" "$pkgdir/opt/$pkgname/"
+    [ -d "$startdir/CodeWriter" ] && cp -rp "$startdir/CodeWriter" "$pkgdir/opt/$pkgname/src"
 
-	# Wrapper
-	mkdir -p "$pkgdir/usr/bin"
-	cat > "$pkgdir/usr/bin/code-writer" <<'EOF'
+    # 3. Set up the Virtual Environment inside the package
+    # This keeps your system python clean!
+    python -m venv "$pkgdir/opt/$pkgname/venv"
+    
+    # We must use the venv's python to install to the right path
+    # We use --no-warn-script-location because we are in a "fake" root
+    "$pkgdir/opt/$pkgname/venv/bin/python" -m pip install --upgrade pip
+    "$pkgdir/opt/$pkgname/venv/bin/pip" install \
+        'requests>=2.32' \
+        'rich>=13.5.0' \
+        'google-genai>=0.1.0' \
+        'argparse' \
+        'websockets'
+
+    # 4. Create the Wrapper Script
+    # This script will live in /usr/bin/code-writer
+    cat > "$pkgdir/usr/bin/code-writer" <<EOF
 #!/bin/sh
-cd /opt/code-writer || exit 1
-exec /opt/code-writer/venv/bin/python /opt/code-writer/main.py "$@"
+# Navigate to the app dir so relative paths for configs work
+cd /opt/$pkgname
+# Run using the isolated venv python
+exec /opt/$pkgname/venv/bin/python /opt/$pkgname/src/main.py "\$@"
 EOF
-	chmod 755 "$pkgdir/usr/bin/code-writer"
+
+    chmod 755 "$pkgdir/usr/bin/code-writer"
+    
+    # 5. Fix permissions (Ensure the venv is usable by all users)
+    find "$pkgdir/opt/$pkgname" -type d -exec chmod 755 {} +
+    find "$pkgdir/opt/$pkgname" -type f -exec chmod 644 {} +
+    chmod 755 "$pkgdir/opt/$pkgname/venv/bin/python"
+    [ -f "$pkgdir/opt/$pkgname/src/main.py" ] && chmod 755 "$pkgdir/opt/$pkgname/src/main.py"
 }
