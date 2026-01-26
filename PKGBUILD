@@ -7,7 +7,7 @@ url="https://example.local/"
 license=('custom')
 depends=('python')
 makedepends=('python-pip' 'python-virtualenv')
-source=()
+source=("src" "config")
 
 build() {
 	return 0
@@ -18,7 +18,8 @@ package() {
 	mkdir -p "$pkgdir/opt/$pkgname"
 	# Copy Python application files from src/ so main.py ends up at /opt/code-writer/main.py
 	if [ -d "$srcdir/src" ]; then
-		cp -a "$srcdir/src/"* "$pkgdir/opt/$pkgname/"
+		mkdir -p "$pkgdir/opt/$pkgname"
+		cp -a "$srcdir/src/." "$pkgdir/opt/$pkgname/"
 	fi
 	# Also copy config directory if present at project root
 	if [ -d "$srcdir/config" ]; then
