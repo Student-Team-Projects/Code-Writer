@@ -14,9 +14,16 @@ build() {
 }
 
 package() {
-	# Create package layout
+	# Create package layout: place package root contents from `src/` at /opt/code-writer
 	mkdir -p "$pkgdir/opt/$pkgname"
-	cp -a "$srcdir/"* "$pkgdir/opt/$pkgname/"
+	# Copy Python application files from src/ so main.py ends up at /opt/code-writer/main.py
+	if [ -d "$srcdir/src" ]; then
+		cp -a "$srcdir/src/"* "$pkgdir/opt/$pkgname/"
+	fi
+	# Also copy config directory if present at project root
+	if [ -d "$srcdir/config" ]; then
+		cp -a "$srcdir/config" "$pkgdir/opt/$pkgname/"
+	fi
 
 	# Create a virtual environment inside the package and install Python deps there.
 	if command -v python >/dev/null 2>&1; then
@@ -33,7 +40,8 @@ package() {
 	mkdir -p "$pkgdir/usr/bin"
 	cat > "$pkgdir/usr/bin/code-writer" <<'EOF'
 #!/bin/sh
-exec /opt/code-writer/venv/bin/python /opt/code-writer/src/main.py "$@"
+cd /opt/code-writer || exit 1
+exec /opt/code-writer/venv/bin/python /opt/code-writer/main.py "$@"
 EOF
 	chmod 755 "$pkgdir/usr/bin/code-writer"
 }
