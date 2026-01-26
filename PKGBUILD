@@ -17,6 +17,11 @@ package() {
 	# Create package layout: place package root contents from `src/` at /opt/code-writer
 	mkdir -p "$pkgdir/opt/$pkgname"
 	# Copy Python application files from src/ so main.py ends up at /opt/code-writer/main.py
+	# Debug: show what makepkg provided in $srcdir
+	echo "--- DEBUG: srcdir="$srcdir" ---"
+	ls -la "$srcdir" || true
+	echo "--- DEBUG: listing $srcdir/src ---"
+	ls -la "$srcdir/src" || true
 	if [ -d "$srcdir/src" ]; then
 		mkdir -p "$pkgdir/opt/$pkgname"
 		# copy contents (including hidden files) from the source src/ into package opt dir
