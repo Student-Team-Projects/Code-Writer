@@ -6,7 +6,7 @@ arch=(x86_64)
 url="https://example.local/"
 license=('custom')
 depends=('python')
-makedepends=('python-pip')
+makedepends=('python-pip' 'python-virtualenv')
 source=()
 
 build() {
@@ -18,19 +18,22 @@ package() {
 	mkdir -p "$pkgdir/opt/$pkgname"
 	cp -a "$srcdir/"* "$pkgdir/opt/$pkgname/"
 
-	# Install Python packages into the package root via pip (preferred fallback).
-	if command -v python >/dev/null 2>&1 && python -m pip --version >/dev/null 2>&1; then
-		python -m pip install --root "$pkgdir" --upgrade --no-cache-dir \
-			'requests>=2.32' 'rich>=13.5.0' 'google-genai>=0.1.0'
+	# Create a virtual environment inside the package and install Python deps there.
+	if command -v python >/dev/null 2>&1; then
+		python -m venv "$pkgdir/opt/$pkgname/venv"
+		# Use the venv pip to install dependencies into the venv
+		"$pkgdir/opt/$pkgname/venv/bin/python" -m pip install --upgrade pip setuptools || true
+		"$pkgdir/opt/$pkgname/venv/bin/pip" install --no-deps --upgrade \
+			'requests>=2.32' 'rich>=13.5.0' 'google-genai>=0.1.0' || echo "pip install into venv failed"
 	else
-		echo "Warning: pip not available — Python dependencies were not installed into package."
+		echo "Warning: python not available — venv and dependencies not installed."
 	fi
 
 	# Wrapper
 	mkdir -p "$pkgdir/usr/bin"
 	cat > "$pkgdir/usr/bin/code-writer" <<'EOF'
 #!/bin/sh
-exec python3 /opt/code-writer/src/main.py "$@"
+exec /opt/code-writer/venv/bin/python /opt/code-writer/src/main.py "$@"
 EOF
 	chmod 755 "$pkgdir/usr/bin/code-writer"
 }
