@@ -1,0 +1,13 @@
+The previous solution failed.
+
+Failure Type: {failure_type}
+(Value can be "Compilation Error" or "Test Case Failure")
+
+Error Details / Output Difference:
+{error_details}
+
+Instructions:
+1. Analyze why this error occurred.
+2. If this was a logic error, reconsider edge cases or integer overflows.
+3. If this was a syntax error, fix the syntax.
+4. Output the FULLY CORRECTED code (not just the fix).

@@ -1,0 +1,14 @@
+Problem Description:
+{description}
+
+Example Public Test Cases:
+Input:
+{example_input}
+
+Expected Output:
+{example_output}
+
+Language: c++
+
+Task:
+Write the complete, compilable solution code.

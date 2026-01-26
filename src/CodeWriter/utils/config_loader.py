@@ -52,7 +52,22 @@ class Config:
         except InvalidJSONException:
             raise ConfigurationException(f"Failed to parse profile: {profile_path}")
 
-        self._settings = profile_settings
+        # Merge defaults from settings.json (if present) into profile settings.
+        defaults = settings.get("defaults", {}) or {}
+
+        def merge_dict(a: dict, b: dict) -> dict:
+            """Return a new dict merging a (defaults) with b (overrides)."""
+            result = dict(a) if a else {}
+            for k, v in (b or {}).items():
+                if isinstance(v, dict) and isinstance(result.get(k), dict):
+                    result[k] = merge_dict(result.get(k, {}), v)
+                else:
+                    result[k] = v
+            return result
+
+        merged = merge_dict(defaults, profile_settings)
+
+        self._settings = merged
         self._active_profile = active_profile
         logger.debug(f"Loaded config profile: {active_profile} from {profile_path}")
 

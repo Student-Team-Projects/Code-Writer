@@ -1,6 +1,6 @@
 {
   "active_profile": "default",
-  "profiles_dir": "config/profiles",
+  "profiles_dir": "src/config/profiles",
   "defaults": {
     "path": {
       "public_tests": "tests_public",
@@ -11,9 +11,9 @@
       "output_folder": "out",
       "error_folder": "error",
       "expected_output_folder": "expected",
-      "system_path": "/config/prompts/system.txt",
-      "user_task_path": "/config/prompts/user_task.txt",
-      "error_fix_path": "/config/prompts/error_fix.txt"
+      "system_path": "src/config/prompts/system.txt",
+      "user_task_path": "src/config/prompts/user_task.txt",
+      "error_fix_path": "src/config/prompts/error_fix.txt"
     },
     "parameters": {
       "stream": false,

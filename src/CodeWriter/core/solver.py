@@ -9,6 +9,7 @@ from .client import Client
 from .tester import Tester
 
 from pathlib import Path
+from typing import Optional
 
 import os
 
@@ -18,10 +19,12 @@ logger = get_logger(__name__)
 
 class Solver:
 
-    def __init__(self, path : str):
+    def __init__(self, path : str, api_key: Optional[str] = None):
         self.directory_path = path
         self.client = None
         self.config = Config()
+        # CLI-provided api_key (overrides profile value when set)
+        self._cli_api_key = api_key
 
         self.system_path = PROJECT_ROOT + self.config.get("path", "system_path")
         self.user_task_path = PROJECT_ROOT + self.config.get("path", "user_task_path")
@@ -86,8 +89,9 @@ class Solver:
 
         # Get model configuration from settings
         provider = self.config.get("model", "provider") or "ollama"
-        api_key = self.config.get("model", "api_key") or None
-        
+        # Prefer CLI-provided key when available
+        api_key = self._cli_api_key or self.config.get("model", "api_key") or None
+
         self.client = Client(
             base_url=self.config.get("model", "base_url"),
             system=self.system,

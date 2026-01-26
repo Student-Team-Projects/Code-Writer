@@ -1,21 +1,13 @@
 import os
 import sys
 import argparse
+import shutil
 from CodeWriter.core.solver import Solver
 from CodeWriter.utils.logger import get_logger
+from CodeWriter.utils.config_loader import Config
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Code Writer — AI-powered code solver",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  poetry run python src/main.py resources/factorial
-  poetry run python src/main.py resources/factorial --profile gemini
-  poetry run python src/main.py resources/factorial --profile default -v
-  CODEWRITER_PROFILE=gemini poetry run python src/main.py resources/factorial
-        """
-    )
+    parser = argparse.ArgumentParser(description="Code Writer — AI-powered code solver")
     parser.add_argument(
         "path",
         nargs="?",
@@ -25,7 +17,12 @@ Examples:
     parser.add_argument(
         "--profile",
         type=str,
-        help="Config profile to use (default, gemini, or custom). Overrides CODEWRITER_PROFILE env var."
+        help="Config profile to use (overrides CODEWRITER_PROFILE env var)."
+    )
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        help="API key for Gemini provider (overrides profile api_key)."
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -34,28 +31,35 @@ Examples:
     )
     
     args = parser.parse_args()
-    
-    # Set profile from CLI argument BEFORE creating logger or Solver
-    # This ensures config_loader reads the correct profile
-    if args.profile:
-        os.environ["CODEWRITER_PROFILE"] = args.profile
-    elif "CODEWRITER_PROFILE" not in os.environ:
-        os.environ["CODEWRITER_PROFILE"] = "default"
-    
-    # Now initialize logger (after profile is set)
-    logger = get_logger(__name__)
-    logger.info(f"Profile: {os.environ.get('CODEWRITER_PROFILE')}")
-    
-    # Set verbose logging if requested
-    if args.verbose:
-        from CodeWriter.utils.logger import get_logger as get_logger_fresh
-        logger = get_logger_fresh(__name__, level=10)  # logging.DEBUG = 10
-        logger.info("Verbose mode enabled")
-    
+
+    # Resolve profile (CLI -> env -> default)
+    profile = args.profile or os.getenv("CODEWRITER_PROFILE") or "default"
+    os.environ["CODEWRITER_PROFILE"] = profile
+
+    # Initialize logger with requested verbosity
+    logger = get_logger(__name__, level=10 if args.verbose else 20)
+    logger.info(f"Profile: {profile}")
     path = args.path
-    
     logger.info(f"Starting solver for: {path}")
-    solver = Solver(path)
+    # Load merged config to inspect provider and profile settings
+    cfg = Config()
+    provider = (cfg.get("model", "provider") or "ollama").lower()
+
+    # If gemini profile/provider is used, require an API key (CLI or profile)
+    if provider == "gemini":
+        profile_key = cfg.get("model", "api_key") or None
+        if not (args.api_key or profile_key):
+            print("Error: Gemini profile requires --api-key or model.api_key in profile")
+            sys.exit(2)
+
+    # If using local Ollama provider, ensure `ollama` binary is available
+    if provider == "ollama":
+        if shutil.which("ollama") is None:
+            print("Error: Ollama provider selected but 'ollama' not found in PATH")
+            sys.exit(2)
+
+    # Pass CLI-provided api_key into Solver (overrides profile value when provided)
+    solver = Solver(path, api_key=args.api_key) if args.api_key else Solver(path)
     tries = 0
     
     while tries < solver.timeout:
