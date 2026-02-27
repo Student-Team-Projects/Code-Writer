@@ -25,6 +25,11 @@ def main():
         help="API key for Gemini provider (overrides profile api_key)."
     )
     parser.add_argument(
+        "--ollama-url",
+        type=str,
+        help="Ollama server URL/IP for Ollama provider (overrides profile base_url)."
+    )
+    parser.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="Enable verbose (DEBUG level) logging"
@@ -52,14 +57,18 @@ def main():
             print("Error: Gemini profile requires --api-key or model.api_key in profile")
             sys.exit(2)
 
-    # If using local Ollama provider, ensure `ollama` binary is available
+    # If using local Ollama provider, require base_url (CLI or profile)
     if provider == "ollama":
+        profile_url = cfg.get("model", "base_url") or None
+        if not (args.ollama_url or profile_url):
+            print("Error: Ollama provider requires --ollama-url or model.base_url in profile")
+            sys.exit(2)
         if shutil.which("ollama") is None:
             print("Error: Ollama provider selected but 'ollama' not found in PATH")
             sys.exit(2)
 
-    # Pass CLI-provided api_key into Solver (overrides profile value when provided)
-    solver = Solver(path, api_key=args.api_key) if args.api_key else Solver(path)
+    # Pass CLI-provided api_key and ollama_url into Solver (overrides profile values when provided)
+    solver = Solver(path, api_key=args.api_key, ollama_url=args.ollama_url)
     tries = 0
     
     while tries < solver.timeout:

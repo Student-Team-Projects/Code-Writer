@@ -19,12 +19,14 @@ logger = get_logger(__name__)
 
 class Solver:
 
-    def __init__(self, path : str, api_key: Optional[str] = None):
+    def __init__(self, path : str, api_key: Optional[str] = None, ollama_url: Optional[str] = None):
         self.directory_path = path
         self.client = None
         self.config = Config()
         # CLI-provided api_key (overrides profile value when set)
         self._cli_api_key = api_key
+        # CLI-provided ollama_url (overrides profile value when set)
+        self._cli_ollama_url = ollama_url
 
         self.system_path = PROJECT_ROOT + self.config.get("path", "system_path")
         self.user_task_path = PROJECT_ROOT + self.config.get("path", "user_task_path")
@@ -89,11 +91,12 @@ class Solver:
 
         # Get model configuration from settings
         provider = self.config.get("model", "provider") or "ollama"
-        # Prefer CLI-provided key when available
+        # Prefer CLI-provided values when available
         api_key = self._cli_api_key or self.config.get("model", "api_key") or None
+        base_url = self._cli_ollama_url or self.config.get("model", "base_url")
 
         self.client = Client(
-            base_url=self.config.get("model", "base_url"),
+            base_url=base_url,
             system=self.system,
             model=self.config.get("model", "model"),
             provider=provider,
