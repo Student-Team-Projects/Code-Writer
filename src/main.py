@@ -10,9 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description="Code Writer — AI-powered code solver")
     parser.add_argument(
         "path",
-        nargs="?",
-        default="resources/factorial",
-        help="Path to the problem directory (default: resources/factorial)"
+        help="Path to the problem directory (required)"
     )
     parser.add_argument(
         "--profile",
