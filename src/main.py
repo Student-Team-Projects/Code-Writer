@@ -55,11 +55,10 @@ def main():
             print("Error: Gemini profile requires --api-key or model.api_key in profile")
             sys.exit(2)
 
-    # If using local Ollama provider, require base_url (CLI or profile)
-    if provider == "ollama":
-        profile_url = cfg.get("model", "base_url") or None
-        if not (args.ollama_url or profile_url):
-            print("Error: Ollama provider requires --ollama-url or model.base_url in profile")
+    # If using default profile (Ollama provider), require base_url via --ollama-url
+    if profile == "default":
+        if not args.ollama_url:
+            print("Error: Default profile requires --ollama-url argument")
             sys.exit(2)
         if shutil.which("ollama") is None:
             print("Error: Ollama provider selected but 'ollama' not found in PATH")
