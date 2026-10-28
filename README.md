@@ -2,6 +2,7 @@
 
 **Authors:** Helena Arendacz, Jakub Janór, Piotr Pasula, Szymon Trofimiec
 **Supervision:** Batłomiej Bosek
+**Task board:** [Microsoft Planner](https://planner.cloud.microsoft/ui/web/plan/tKDxzTuwO0uz3KdscbwahpYABVtD/view/board?tid=eb0e26eb-bfbe-47d2-9e90-ebd2426dbceb)
 
 Code Writer uses an LLM to solve competitive-programming problems in C++. It gives the model a problem
 statement with example tests, compiles the answer, runs it against the tests, and feeds any failure back
