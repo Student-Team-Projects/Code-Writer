@@ -8,11 +8,13 @@ try:
     from rich.console import Console
     from rich.syntax import Syntax
     from rich.panel import Panel
+    from rich.text import Text
 except Exception: # If for some reason rich is not available
     RichHandler = None
     Console = None
     Syntax = None
     Panel = None
+    Text = None
 
 
 def _use_colors() -> bool:
@@ -96,4 +98,5 @@ def pretty_print_message(title: str, message: str) -> None:
         return
 
     console = Console()
-    console.print(Panel(message, title=title))
+    # Text() so brackets in code/prompts (e.g. a[i]) are not parsed as rich markup
+    console.print(Panel(Text(message), title=title))
