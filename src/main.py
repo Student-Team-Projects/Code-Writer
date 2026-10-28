@@ -4,6 +4,7 @@ import argparse
 from CodeWriter.core.solver import Solver
 from CodeWriter.utils.logger import get_logger
 from CodeWriter.utils.config_loader import Config
+from CodeWriter.utils.exceptions import SolverException
 
 def main():
     parser = argparse.ArgumentParser(description="Code Writer — AI-powered code solver")
@@ -31,20 +32,26 @@ def main():
         action="store_true",
         help="Enable verbose (DEBUG level) logging"
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print every prompt sent to the LLM"
+    )
     
     args = parser.parse_args()
 
-    # Resolve profile (CLI -> env -> default)
-    profile = args.profile or os.getenv("CODEWRITER_PROFILE") or "default"
-    os.environ["CODEWRITER_PROFILE"] = profile
+    # Resolve profile (CLI -> env -> active_profile in settings.json)
+    if args.profile:
+        os.environ["CODEWRITER_PROFILE"] = args.profile
+    # Load merged config to inspect provider and profile settings
+    cfg = Config()
+    profile = cfg.get_active_profile()
 
     # Initialize logger with requested verbosity
     logger = get_logger(__name__, level=10 if args.verbose else 20)
     logger.info(f"Profile: {profile}")
     path = args.path
     logger.info(f"Starting solver for: {path}")
-    # Load merged config to inspect provider and profile settings
-    cfg = Config()
     provider = (cfg.get("model", "provider") or "ollama").lower()
 
     # If gemini profile/provider is used, require an API key (CLI or profile)
@@ -61,20 +68,25 @@ def main():
             sys.exit(2)
 
     # Pass CLI-provided api_key and ollama_url into Solver (overrides profile values when provided)
-    solver = Solver(path, api_key=args.api_key, ollama_url=args.ollama_url)
+    solver = Solver(path, api_key=args.api_key, ollama_url=args.ollama_url, debug=args.debug)
     tries = 0
     
     while tries < solver.timeout:
-        if tries == 0:
-            logger.info("🔄 Attempt 1: Generating initial solution...")
-            result = solver.begin_chat()
-        else:
-            logger.info(f"🔄 Attempt {tries + 1}: Fixing errors...")
-            result = solver.continue_chat()
+        try:
+            if tries == 0:
+                logger.info("🔄 Attempt 1: Generating initial solution...")
+                result = solver.begin_chat()
+            else:
+                logger.info(f"🔄 Attempt {tries + 1}: Fixing errors...")
+                result = solver.continue_chat()
+        except SolverException as e:
+            logger.error(f"❌ {e}")
+            exit(1)
         
         logger.info("✓ Running validation...")
         public = solver.validate_public()
-        secret = solver.validate_secret()
+        # Skip secret tests when public ones fail, so the model gets the visible failure details
+        secret = public and solver.validate_secret()
         
         if public and secret:
             logger.info("✅ All tests passed! Solution is correct.")

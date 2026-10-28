@@ -12,17 +12,35 @@ from pathlib import Path
 from typing import Optional
 
 import os
+import re
 
 BASE_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../.."))
 logger = get_logger(__name__)
 
+THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
+CODE_BLOCK = re.compile(r"```[\w+-]*\n(.*?)```", re.DOTALL)
+STRAY_FENCE = re.compile(r"^```[\w+-]*\n|\n?```\s*$")
+
+
+def extract_code(response: str) -> str:
+    """Return the source code from a model reply, dropping <think> blocks, prose and markdown fences."""
+    response = THINK_BLOCK.sub("", response)
+    blocks = CODE_BLOCK.findall(response)
+    if blocks:
+        code = max(blocks, key=len)
+    else:
+        # No complete fenced block (e.g. reply without markdown, or cut off): drop any stray fence lines
+        code = STRAY_FENCE.sub("", response.strip())
+    return code.strip() + "\n"
+
 class Solver:
 
-    def __init__(self, path : str, api_key: Optional[str] = None, ollama_url: Optional[str] = None):
+    def __init__(self, path : str, api_key: Optional[str] = None, ollama_url: Optional[str] = None, debug: bool = False):
         self.directory_path = path
         self.client = None
         self.config = Config()
+        self.debug = debug
         # CLI-provided api_key (overrides profile value when set)
         self._cli_api_key = api_key
         # CLI-provided ollama_url (overrides profile value when set)
@@ -100,15 +118,14 @@ class Solver:
             system=self.system,
             model=self.config.get("model", "model"),
             provider=provider,
-            api_key=api_key
+            api_key=api_key,
+            num_ctx=self.config.get("parameters", "num_ctx") or 12288,
+            think=self.config.get("parameters", "think") or False,
+            debug=self.debug
         )
 
-        self.last_response = self.client.chat(self.user_task)
-        self.last_response = self.last_response.strip("`cpp")
-        with open(self.solution_path, "w") as f:
-            f.write(self.last_response)
+        return self.save_solution(self.client.chat(self.user_task))
 
-        return self.last_response
     def continue_chat(self):
         if self.client is None:
             raise SolverException("Conversation has not been started")
@@ -117,11 +134,14 @@ class Solver:
         self.prepare_error_fix()
         message = self.error_fix
 
-        self.last_response = self.client.chat(message)
-        self.last_response = self.last_response.strip("`cpp")
+        return self.save_solution(self.client.chat(message))
+
+    def save_solution(self, response: str) -> str:
+        self.last_response = extract_code(response)
         with open(self.solution_path, "w") as f:
             f.write(self.last_response)
         return self.last_response
+
     def validate(self, dir: str, secret : bool) -> bool:
         # Compile
         try:
@@ -175,7 +195,7 @@ class Solver:
             result = self.tester.compare_files(expected_path, output_path)
             if not result:
                 self.last_error = {"failure_type": "Test Case Failure",
-                                   "input": input,
+                                   "input": input_path,
                                    "expected": expected_path,
                                    "output": output_path,
                                    "error_file": error_path,
@@ -195,6 +215,9 @@ class Solver:
         return self.validate(self.public_tests_path, False)
     
     def validate_secret(self) -> bool:
+        if not os.path.isdir(self.tests_secret_path):
+            logger.warning("No secret tests found at %s, skipping them", self.tests_secret_path)
+            return True
         pretty_print_message("RUNNING","Running secret tests...")
         return self.validate(self.tests_secret_path, True)
 
