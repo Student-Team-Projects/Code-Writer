@@ -1,7 +1,6 @@
 import os
 import sys
 import argparse
-import shutil
 from CodeWriter.core.solver import Solver
 from CodeWriter.utils.logger import get_logger
 from CodeWriter.utils.config_loader import Config
@@ -59,9 +58,6 @@ def main():
     if profile == "default":
         if not args.ollama_url:
             print("Error: Default profile requires --ollama-url argument")
-            sys.exit(2)
-        if shutil.which("ollama") is None:
-            print("Error: Ollama provider selected but 'ollama' not found in PATH")
             sys.exit(2)
 
     # Pass CLI-provided api_key and ollama_url into Solver (overrides profile values when provided)
