@@ -1,5 +1,4 @@
 from pathlib import Path
-import signal
 import subprocess
 
 from ..utils.file_validator import FileValidator
@@ -55,18 +54,9 @@ class Runner:
             except Exception:
                 stderr = e.stderr or ""
 
-            # A crash (e.g. segfault) leaves stderr empty, so report how the process ended
-            if e.returncode < 0:
-                try:
-                    status = f"killed by signal {signal.Signals(-e.returncode).name}"
-                except ValueError:
-                    status = f"killed by signal {-e.returncode}"
-            else:
-                status = f"exited with code {e.returncode}"
-
-            pretty_print_message("Runtime Error", f"Program {status}\n{stderr}")
-            logger.error("Runtime Error while running %s: %s", binary, status)
-            raise ExecutionError(f"Program {status}.\n{stderr}")
+            pretty_print_message("Runtime Error", stderr)
+            logger.exception("Runtime Error while running %s", binary)
+            raise ExecutionError(f"Runtime Error:\n{stderr}")
         except Exception as e:
             logger.exception("Unknown error while executing %s: %s", binary, e)
             raise ExecutionError(f"Unknown Error occured: {e}")

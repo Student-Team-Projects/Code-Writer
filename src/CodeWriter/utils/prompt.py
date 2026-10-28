@@ -4,12 +4,12 @@ from .json_parser import JSON_Parser
 
 
 class Prompt:
-    def __init__(self, system: str,  model: str, num_ctx: int = 12288, stream: bool = False, think: bool = False):
+    def __init__(self, system: str,  model: str, max_tokens: int = 2048, stream: bool = False, think: bool = False):
         self.model = model #
         self.system = system
         self.messages = []
         self.response_schema = None
-        self.num_ctx = num_ctx
+        self.max_tokens = max_tokens
         self.stream = stream
         self.think = think
 
@@ -34,8 +34,7 @@ class Prompt:
             "model": self.model,
             "messages": self.get_messages(),
             #"format": self.response_schema,
-            # Ollama's default context (often 4096) silently drops the start of the conversation
-            "options": {"num_ctx": self.num_ctx},
+            # "options.num_ctx": self.max_tokens,
             "stream": self.stream,
             "think" : self.think
         }

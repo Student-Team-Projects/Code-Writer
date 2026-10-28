@@ -17,13 +17,12 @@
     },
     "parameters": {
       "stream": false,
-      "think": false,
-      "num_ctx": 12288
+      "think": false
     },
     "environment": {
       "compiler": "g++",
       "language": "c++",
-      "flags": "-O3 -Wall -Wshadow -Wextra -Werror",
+      "flags": "O3 Wall Wshadow Wextra Werror",
       "platform": "Linux x86-64"
     }
   }
