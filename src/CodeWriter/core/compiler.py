@@ -9,21 +9,20 @@ from ..utils.config_loader import Config
 from ..utils.logger import get_logger, pretty_compilation_error
 
 logger = get_logger(__name__)
-MAX_STDERR_LENGTH = 4000
 
 
 class Compiler:
     def __init__(self):
         self.config = Config()
         self.compiler = self.config.get("environment", "compiler")
-        self.default_flags = self.config.get("environment", "flags").split()
+        self.default_flags = self.config.get("environment", "flags").split(" ")
 
 
         if not shutil.which(self.compiler):
             raise EnvironmentError(f"Compiler {self.compiler} not found.")
 
     def compile(
-        self, source_path: str, output_dir: Optional[str] = None, flags: Optional[List[str]] = None
+        self, source_path: str, output_dir: Optional[str] = None, flags: List[str] = []
     ) -> str:
         validator = FileValidator()
         source = validator.validate(source_path)
@@ -32,8 +31,11 @@ class Compiler:
             output_dir, source.parent, source.stem
         )
 
-        # Prepare flags: defaults always apply, extra flags appended, duplicates dropped in order
-        flags = list(dict.fromkeys(self.default_flags + (flags or [])))
+        # Prepare flags
+        if flags:
+            flags = self.default_flags + flags
+            flags_set = set(flags)
+            flags = list(flags_set)  # unique
 
         # Execute compilation
         cmd = [self.compiler, str(source), "-o", str(binary_path)]
@@ -45,14 +47,11 @@ class Compiler:
             # Capture standard error from the compiler (e.g., syntax errors)
             logger.error("Compilation failed for '%s'", source.name)
             pretty_compilation_error(str(source), e.stderr)
-            stderr = e.stderr.strip()
-            if len(stderr) > MAX_STDERR_LENGTH:
-                stderr = stderr[:MAX_STDERR_LENGTH] + "\n... (compiler output truncated)"
-            raise CompilationError(f"Compilation failed for '{source.name}':\n{stderr}")
+            raise CompilationError(f"Compilation failed for '{source.name}': see stderr above")
         except FileNotFoundError as e:
             raise CompilationError(f"Compiler '{self.compiler}' not found.")
         except Exception as e:
-            raise CompilationError(f"Unknown error occurred\n {e}")
+            raise CompilationError(f"Unknown error occurred\n {{e.stderr}}")
 
         return str(binary_path)
 
