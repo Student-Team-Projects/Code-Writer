@@ -7,8 +7,15 @@ from CodeWriter.utils.exceptions import SolverException, ConfigurationException
 
 
 def solve(path: str, model: dict, debug: bool, logger) -> dict:
-    """Run the attempt loop for one model. Returns {"passed": bool, "attempts": int, "error": str | None}."""
-    solver = Solver(path, model, debug=debug)
+    """Run the attempt loop for one model.
+
+    Returns {"passed": bool, "attempts": int, "error": str | None, "soft_tle": [tests over the soft time limit]}.
+    """
+    try:
+        solver = Solver(path, model, debug=debug)
+    except ConfigurationException as e:
+        logger.error(f"❌ {e}")
+        sys.exit(2)
 
     for attempt in range(1, solver.max_attempts + 1):
         try:
@@ -20,7 +27,7 @@ def solve(path: str, model: dict, debug: bool, logger) -> dict:
                 solver.continue_chat()
         except SolverException as e:
             logger.error(f"❌ {e}")
-            return {"passed": False, "attempts": attempt, "error": str(e)}
+            return {"passed": False, "attempts": attempt, "error": str(e), "soft_tle": []}
 
         logger.info("✓ Running validation...")
         public = solver.validate_public()
@@ -28,11 +35,15 @@ def solve(path: str, model: dict, debug: bool, logger) -> dict:
         secret = public and solver.validate_secret()
 
         if public and secret:
+            if solver.soft_tle:
+                slowest = max(t["time"] for t in solver.soft_tle)
+                logger.warning(f"⚠️  Passed, but {len(solver.soft_tle)} test(s) exceeded the soft time limit "
+                               f"of {solver.limits['time_soft']:g} s (slowest {slowest:.3f} s)")
             logger.info("✅ All tests passed! Solution is correct.")
-            return {"passed": True, "attempts": attempt, "error": None}
+            return {"passed": True, "attempts": attempt, "error": None, "soft_tle": solver.soft_tle}
 
     logger.error(f"❌ Failed after {solver.max_attempts} attempts")
-    return {"passed": False, "attempts": solver.max_attempts, "error": None}
+    return {"passed": False, "attempts": solver.max_attempts, "error": None, "soft_tle": []}
 
 
 def main():
@@ -87,6 +98,8 @@ def main():
         for name, r in results.items():
             status = "✅ passed" if r["passed"] else "❌ failed"
             detail = f" ({r['error']})" if r["error"] else ""
+            if r["soft_tle"]:
+                detail += f" ⚠️  {len(r['soft_tle'])} test(s) over soft time limit"
             logger.info(f"  {name:20} {status} after {r['attempts']} attempt(s){detail}")
 
     # Exit 0 only if every model solved the problem

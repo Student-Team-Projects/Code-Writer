@@ -10,13 +10,19 @@
     "expected_output_folder": "expected",
     "system_path": "/config/prompts/system.txt",
     "user_task_path": "/config/prompts/user_task.txt",
-    "error_fix_path": "/config/prompts/error_fix.txt"
+    "error_fix_path": "/config/prompts/error_fix.txt",
+    "limits_file": "limits.json"
   },
   "parameters": {
     "max_attempts": 10,
     "stream": false,
     "think": false,
     "num_ctx": 12288
+  },
+  "limits": {
+    "time_soft": 2,
+    "time_hard": 10,
+    "memory": 256
   },
   "environment": {
     "compiler": "g++",

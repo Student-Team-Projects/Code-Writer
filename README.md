@@ -27,7 +27,8 @@ problem_description.txt + public examples
    with the problem description and all public test inputs and outputs filled in.
 2. The C++ code is extracted from the reply and saved as `main.cpp` in the problem folder.
 3. It is compiled with the configured flags (`-O3 -Wall -Wshadow -Wextra -Werror` by default).
-4. The binary runs on every public test (15 s limit each). Output is compared ignoring whitespace differences.
+4. The binary runs on every public test, within the time and memory limits (see [Time and memory limits](#time-and-memory-limits)).
+   Output is compared ignoring whitespace differences.
 5. If all public tests pass, the secret tests run. The model never sees their contents.
 6. On failure, the model gets an error report (`config/prompts/error_fix.txt`) with the compiler output,
    the crash reason, or the failing test's input, output and expected output. Secret failures are reported
@@ -185,6 +186,7 @@ Problems live in `resources/`. Each problem is a folder:
 ```
 resources/<problem>/
 ├── problem_description.txt   # statement given to the model
+├── limits.json               # optional: time and memory limits for this problem
 ├── tests_public/             # shown to the model as examples, and run
 │   ├── in/1                  # stdin for test 1
 │   └── expected/1            # expected stdout for test 1
@@ -219,9 +221,44 @@ The run is configured by your `codewriter.json`. Anything you leave out comes fr
 | `parameters.max_attempts` | Maximum number of attempts (default 10) |
 | `parameters.num_ctx` | Ollama context size in tokens (default 12288). Ollama's own default is often 4096, which silently drops the start of longer conversations. Larger values use more RAM. |
 | `parameters.think` | Enable the model's thinking mode (Ollama) |
+| `limits.time_soft` | Soft time limit per test, in seconds (default 2) |
+| `limits.time_hard` | Hard time limit per test, in seconds (default 10) |
+| `limits.memory` | Memory limit in MB (default 256) |
 | `environment.compiler`, `environment.flags` | Compiler and flags; also shown to the model in the system prompt |
 
 The program checks the file at startup and stops with a clear message if a required setting is missing.
+
+## Time and memory limits
+
+Each test runs with three limits:
+
+| Limit | What happens when it's exceeded |
+|---|---|
+| **Hard time limit** (`time_hard`) | The program is killed and the test fails with **Time Limit Exceeded**. |
+| **Soft time limit** (`time_soft`) | The test still **passes**, with a warning. The final result and the multi-model summary say how many tests were over it. |
+| **Memory limit** (`memory`) | The test fails with **Memory Limit Exceeded**. The stack may also grow up to this size, so deep recursion works. |
+
+Times are wall-clock seconds. The model is told the soft time limit and the memory limit in the task, and on a
+failure it gets the verdict (e.g. `Time Limit Exceeded`) so it knows to make the solution faster or smaller.
+
+Set the defaults in `codewriter.json`:
+
+```json
+{ "models": [...], "limits": { "time_soft": 1, "time_hard": 5, "memory": 256 } }
+```
+
+A problem can set its own limits in `resources/<problem>/limits.json`, which override the config:
+
+```json
+{ "time_soft": 0.5, "time_hard": 2, "memory": 64 }
+```
+
+`time_soft` must not be greater than `time_hard`.
+
+**Memory limits are only enforced on Linux, so run in Docker.** On macOS the program isn't stopped when it uses
+too much memory: its peak memory is checked after it finishes, and the stack stays at the system default (8 MB).
+On Linux, memory reported as `≤ 17 MB` means "small": the system counts the starting Python process's memory
+as a lower bound.
 
 ## Debugging a run
 

@@ -9,6 +9,8 @@ Expected Output:
 {example_output}
 
 Language: c++
+Time limit: {time_limit} s per test
+Memory limit: {memory_limit} MB
 
 Task:
 Write the complete, compilable solution code.

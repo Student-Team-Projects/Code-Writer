@@ -45,6 +45,28 @@ def _merge(defaults: dict, overrides: dict) -> dict:
     return result
 
 
+def resolve_limits(base: dict, problem_dir: str, limits_file: str) -> dict:
+    """Limits for one problem: the config's "limits", overridden by <problem_dir>/<limits_file> if present."""
+    limits = dict(base)
+    path = os.path.join(problem_dir, limits_file)
+    if os.path.isfile(path):
+        limits = _merge(limits, _read_json(path))
+        logger.info(f"Using limits from {path}")
+    _validate_limits(limits, path if os.path.isfile(path) else "config")
+    return limits
+
+
+def _validate_limits(limits: dict, where: str):
+    for key in ("time_soft", "time_hard", "memory"):
+        value = limits.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise ConfigurationException(f"{where}: limits.{key} must be a positive number (got {value!r})")
+    if limits["time_soft"] > limits["time_hard"]:
+        raise ConfigurationException(
+            f"{where}: limits.time_soft ({limits['time_soft']}) must not be greater than limits.time_hard ({limits['time_hard']})"
+        )
+
+
 class Config:
     """The run configuration: built-in defaults (config/settings.json) overridden by the user's codewriter.json.
 
@@ -137,6 +159,7 @@ class Config:
             normalized.append(model)
 
         settings["models"] = normalized
+        _validate_limits(settings.get("limits", {}), path)
 
     def models(self, name: str = None) -> list:
         """All configured models, or only the one called `name`."""

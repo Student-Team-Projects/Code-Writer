@@ -1,4 +1,4 @@
-from ..utils.config_loader import Config
+from ..utils.config_loader import Config, resolve_limits
 from ..utils.file_validator import fileValidator
 from ..utils.exceptions import ExecutionError, SolverException, CompilationError
 from ..utils.logger import get_logger, pretty_print_message
@@ -57,7 +57,10 @@ class Solver:
 
         self.compiler = Compiler()
         self.max_attempts = self.parameters["max_attempts"]
-        self.runner = Runner()
+        self.limits = resolve_limits(self.config.get("limits"), path, self.config.get("path", "limits_file"))
+        self.runner = Runner(self.limits["time_soft"], self.limits["time_hard"], self.limits["memory"])
+        # Tests that passed but ran longer than the soft time limit, in the last validation
+        self.soft_tle = []
         self.tester = Tester()
 
         self.prepare_system()
@@ -77,6 +80,8 @@ class Solver:
 
         # Description
         task = task.replace("{description}", description)
+        task = task.replace("{time_limit}", f"{self.limits['time_soft']:g}")
+        task = task.replace("{memory_limit}", f"{self.limits['memory']:g}")
 
         # Example Input
         input_path = os.path.join(self.public_tests_path, self.config.get("path", "input_folder"))
@@ -136,6 +141,7 @@ class Solver:
         return self.last_response
 
     def validate(self, dir: str, secret : bool) -> bool:
+        self.soft_tle = [t for t in self.soft_tle if t["secret"] != secret]
         # Compile
         try:
             binary = self.compiler.compile(self.solution_path)
@@ -169,23 +175,24 @@ class Solver:
             error_path = os.path.join(error_dir, filename)
 
             try:
-                self.runner.run(binary, input_path, output_path, error_path)
+                run = self.runner.run(binary, input_path, output_path, error_path)
             except ExecutionError as e:
-                self.last_error = {"failure_type": "ExecutionError",
+                self.last_error = {"failure_type": e.kind,
                                    "input": input_path,
                                    "output": output_path,
                                    "error_file": error_path,
                                    "secret": secret,
                                    "error_details": (
-                                        f" Runtime error: {str(e)}\n While running following test: \n---INPUT---\n" +
+                                        f" {e.kind}: {str(e)}\n While running following test: \n---INPUT---\n" +
                                         fileValidator.read_file(input_path) + "\n---OUTPUT---\n" +
                                         fileValidator.read_file(output_path) + "\n---EXPECTED---\n" +
                                         fileValidator.read_file(expected_path) + "\n---ERROR---\n" +
                                         fileValidator.read_file(error_path) + "\n")}
                 return False
-            
 
             result = self.tester.compare_files(expected_path, output_path)
+            if result and run.soft_tle:
+                self.soft_tle.append({"test": filename, "secret": secret, "time": run.time})
             if not result:
                 self.last_error = {"failure_type": "Test Case Failure",
                                    "input": input_path,

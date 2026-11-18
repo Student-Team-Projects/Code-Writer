@@ -3,7 +3,10 @@ class CompilationError(Exception):
 
 
 class ExecutionError(Exception):
-    pass
+    """A failed run. kind: "Runtime Error", "Time Limit Exceeded" or "Memory Limit Exceeded"."""
+    def __init__(self, message: str, kind: str = "Runtime Error"):
+        super().__init__(message)
+        self.kind = kind
 
 
 class InvalidJSONException(Exception):
