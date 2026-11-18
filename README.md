@@ -37,7 +37,7 @@ It stops when all tests pass (exit code 0) or after the maximum number of attemp
 
 ## Quick start (Docker)
 
-Requirements: Docker with Compose, and an LLM: a local [Ollama](https://ollama.com) server or a Gemini API key.
+Requirements: Docker with Compose, and an LLM: a local [Ollama](https://ollama.com) server, or an API key for Gemini, OpenAI, Mistral or DeepSeek.
 
 ```sh
 docker compose build
@@ -92,6 +92,42 @@ and restart it.
 ```
 
 Get a key in [Google AI Studio](https://aistudio.google.com/apikey).
+
+### With ChatGPT (OpenAI)
+
+`codewriter.json`:
+
+```json
+{
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5",
+    "api_key": "YOUR_OPENAI_KEY"
+  }
+}
+```
+
+Get a key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys). The API is billed
+separately from a ChatGPT subscription. Use any model name from
+[OpenAI's model list](https://platform.openai.com/docs/models). `base_url` is optional (default
+`https://api.openai.com/v1`); set it to use another OpenAI-compatible server.
+
+### With Mistral or DeepSeek
+
+```json
+{
+  "models": [
+    { "name": "codestral", "provider": "mistral", "model": "codestral-latest", "api_key": "YOUR_MISTRAL_KEY" },
+    { "name": "deepseek", "provider": "deepseek", "model": "deepseek-chat", "api_key": "YOUR_DEEPSEEK_KEY" }
+  ]
+}
+```
+
+Get keys at [console.mistral.ai](https://console.mistral.ai) and
+[platform.deepseek.com](https://platform.deepseek.com). Model names are listed in
+[Mistral's docs](https://docs.mistral.ai/getting-started/models/) and
+[DeepSeek's docs](https://api-docs.deepseek.com/quick_start/pricing). `codestral-latest` is Mistral's coding
+model; `deepseek-reasoner` is DeepSeek's slower reasoning model.
 
 ### Several models
 
@@ -175,10 +211,10 @@ The run is configured by your `codewriter.json`. Anything you leave out comes fr
 |---|---|
 | `model` or `models` | One model (an object) or several (a list of objects with the keys below) |
 | `model.name` | Name used by `--model` and in the summary (default: the `model` value) |
-| `model.provider` | `ollama` or `gemini` (required) |
-| `model.model` | Model name, e.g. `qwen3:14b`, `gemini-3.8-flash` (required) |
-| `model.base_url` | Ollama server URL (required for Ollama) |
-| `model.api_key` | Gemini API key (required for Gemini) |
+| `model.provider` | `ollama`, `gemini`, `openai`, `mistral` or `deepseek` (required) |
+| `model.model` | Model name, e.g. `qwen3:14b`, `gemini-3.8-flash`, `gpt-5`, `codestral-latest`, `deepseek-chat` (required) |
+| `model.base_url` | Server URL (required for Ollama; optional for the others, which have built-in defaults) |
+| `model.api_key` | API key (required for everything except Ollama) |
 | `model.parameters` | Per-model overrides of `parameters` |
 | `parameters.max_attempts` | Maximum number of attempts (default 10) |
 | `parameters.num_ctx` | Ollama context size in tokens (default 12288). Ollama's own default is often 4096, which silently drops the start of longer conversations. Larger values use more RAM. |
@@ -215,7 +251,7 @@ On Arch Linux, `./install.sh` builds a package (via `PKGBUILD`) that installs a 
 src/main.py                     # CLI entry point and the attempt loop
 src/CodeWriter/core/
     solver.py                   # builds prompts, extracts code, runs validation
-    client.py                   # Ollama and Gemini clients
+    client.py                   # LLM clients (Ollama, Gemini, OpenAI-compatible: OpenAI, Mistral, DeepSeek)
     compiler.py                 # compiles main.cpp with g++
     runner.py                   # runs the binary on a test with a time limit
     tester.py                   # compares output with expected output

@@ -12,6 +12,13 @@ except ImportError:
 
 logger = get_logger(__name__)
 REQUEST_TIMEOUT = 600  # seconds; local models can take minutes per answer
+# Providers that speak the OpenAI Chat Completions API: default base URL and display name
+OPENAI_COMPATIBLE = {
+    "openai": ("https://api.openai.com/v1", "OpenAI"),
+    "mistral": ("https://api.mistral.ai/v1", "Mistral"),
+    "deepseek": ("https://api.deepseek.com", "DeepSeek"),
+}
+PROVIDERS = ("ollama", "gemini") + tuple(OPENAI_COMPATIBLE)
 
 class Client:
     def __init__(self, base_url: str, system: str, model: str, provider: str = "ollama", api_key: Optional[str] = None, stream: bool = False, num_ctx: int = 12288, think: bool = False, debug: bool = False):
@@ -23,8 +30,8 @@ class Client:
         self.debug = debug
         self.prompt = Prompt(system, model, num_ctx=num_ctx, stream=False, think=think)
         
-        if self.provider not in ("ollama", "gemini"):
-            raise ValueError(f"Unsupported provider: {self.provider}. Choose 'ollama' or 'gemini'.")
+        if self.provider not in PROVIDERS:
+            raise ValueError(f"Unsupported provider: {self.provider}. Choose one of: {', '.join(PROVIDERS)}.")
         
         if self.provider == "gemini":
             if not api_key:
@@ -45,6 +52,8 @@ class Client:
                 return self._chat_ollama(payload)
             elif self.provider == "gemini":
                 return self._chat_gemini(payload)
+            elif self.provider in OPENAI_COMPATIBLE:
+                return self._chat_openai(payload)
         except requests.exceptions.RequestException as e:
             raise SolverException(f"Request to {self.provider} failed: {e}") from e
 
@@ -71,6 +80,48 @@ class Client:
         pretty_display_code(code=result_text, language="cpp", title="Generated Code")
 
         return result_text
+
+    def _chat_openai(self, payload: Dict) -> str:
+        """Chat via the OpenAI Chat Completions API (OpenAI, Mistral, DeepSeek)."""
+        default_url, name = OPENAI_COMPATIBLE[self.provider]
+        if not self.api_key:
+            raise SolverException(f"{name} API key is required. Set model.api_key in codewriter.json.")
+
+        url = f"{(self.base_url or default_url).rstrip('/')}/chat/completions"
+        logger.info(f"→ POST {url} ({name} {self.model_name})")
+        response = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json={"model": self.model_name, "messages": payload["messages"]},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if not response.ok:
+            # The body explains the problem (bad key, unknown model, quota); raise_for_status drops it
+            raise SolverException(f"{name} API error {response.status_code}: {self._error_detail(response)}")
+
+        result_text = response.json()["choices"][0]["message"]["content"] or ""
+
+        self.prompt.register_assistant_message(result_text)
+        logger.info("Here is your generated code:")
+        pretty_display_code(code=result_text, language="cpp", title="Generated Code")
+
+        return result_text
+
+    @staticmethod
+    def _error_detail(response) -> str:
+        """Pull the error message out of an error response; providers nest it differently."""
+        try:
+            body = response.json()
+        except ValueError:
+            return response.text[:500]
+        if isinstance(body, dict):
+            error = body.get("error")
+            if isinstance(error, dict) and error.get("message"):
+                return error["message"]
+            for key in ("message", "detail", "error"):
+                if body.get(key):
+                    return str(body[key])
+        return response.text[:500]
 
     def _chat_gemini(self, payload: Dict) -> str:
         """Chat with Google Gemini API using the new google-genai SDK."""

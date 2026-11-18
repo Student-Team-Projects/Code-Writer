@@ -13,7 +13,14 @@ EXAMPLE_PATH = os.path.join(PROJECT_ROOT, "codewriter.example.json")
 # Name of the user's config file, looked up in the current directory when --config is not given
 CONFIG_FILENAME = "codewriter.json"
 
-PROVIDERS = ("ollama", "gemini")
+PROVIDER_NAMES = {
+    "ollama": "Ollama",
+    "gemini": "Gemini",
+    "openai": "OpenAI",
+    "mistral": "Mistral",
+    "deepseek": "DeepSeek",
+}
+PROVIDERS = tuple(PROVIDER_NAMES)
 
 
 def _read_json(path: str) -> dict:
@@ -109,8 +116,8 @@ class Config:
                 raise ConfigurationException(f"{where}.model is required (e.g. \"qwen3:14b\")")
             if provider == "ollama" and not model.get("base_url"):
                 raise ConfigurationException(f"{where}.base_url is required for Ollama (e.g. \"http://localhost:11434\")")
-            if provider == "gemini" and not model.get("api_key"):
-                raise ConfigurationException(f"{where}.api_key is required for Gemini")
+            if provider != "ollama" and not model.get("api_key"):
+                raise ConfigurationException(f"{where}.api_key is required for {PROVIDER_NAMES[provider]}")
 
             name = model.get("name") or model["model"]
             if name in names:
