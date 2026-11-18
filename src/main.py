@@ -1,10 +1,39 @@
-import os
 import sys
 import argparse
 from CodeWriter.core.solver import Solver
 from CodeWriter.utils.logger import get_logger
 from CodeWriter.utils.config_loader import Config
-from CodeWriter.utils.exceptions import SolverException
+from CodeWriter.utils.exceptions import SolverException, ConfigurationException
+
+
+def solve(path: str, model: dict, debug: bool, logger) -> dict:
+    """Run the attempt loop for one model. Returns {"passed": bool, "attempts": int, "error": str | None}."""
+    solver = Solver(path, model, debug=debug)
+
+    for attempt in range(1, solver.max_attempts + 1):
+        try:
+            if attempt == 1:
+                logger.info("🔄 Attempt 1: Generating initial solution...")
+                solver.begin_chat()
+            else:
+                logger.info(f"🔄 Attempt {attempt}: Fixing errors...")
+                solver.continue_chat()
+        except SolverException as e:
+            logger.error(f"❌ {e}")
+            return {"passed": False, "attempts": attempt, "error": str(e)}
+
+        logger.info("✓ Running validation...")
+        public = solver.validate_public()
+        # Skip secret tests when public ones fail, so the model gets the visible failure details
+        secret = public and solver.validate_secret()
+
+        if public and secret:
+            logger.info("✅ All tests passed! Solution is correct.")
+            return {"passed": True, "attempts": attempt, "error": None}
+
+    logger.error(f"❌ Failed after {solver.max_attempts} attempts")
+    return {"passed": False, "attempts": solver.max_attempts, "error": None}
+
 
 def main():
     parser = argparse.ArgumentParser(description="Code Writer — AI-powered code solver")
@@ -13,19 +42,14 @@ def main():
         help="Path to the problem directory (required)"
     )
     parser.add_argument(
-        "--profile",
+        "-c", "--config",
         type=str,
-        help="Config profile to use (overrides CODEWRITER_PROFILE env var)."
+        help="Path to the config file (default: ./codewriter.json)"
     )
     parser.add_argument(
-        "--api-key",
+        "-m", "--model",
         type=str,
-        help="API key for Gemini provider (overrides profile api_key)."
-    )
-    parser.add_argument(
-        "--ollama-url",
-        type=str,
-        help="Ollama server URL/IP for Ollama provider (overrides profile base_url)."
+        help="Run only the model with this name from the config (default: all models)"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -37,65 +61,37 @@ def main():
         action="store_true",
         help="Print every prompt sent to the LLM"
     )
-    
-    args = parser.parse_args()
 
-    # Resolve profile (CLI -> env -> active_profile in settings.json)
-    if args.profile:
-        os.environ["CODEWRITER_PROFILE"] = args.profile
-    # Load merged config to inspect provider and profile settings
-    cfg = Config()
-    profile = cfg.get_active_profile()
+    args = parser.parse_args()
 
     # Initialize logger with requested verbosity
     logger = get_logger(__name__, level=10 if args.verbose else 20)
-    logger.info(f"Profile: {profile}")
-    path = args.path
-    logger.info(f"Starting solver for: {path}")
-    provider = (cfg.get("model", "provider") or "ollama").lower()
 
-    # If gemini profile/provider is used, require an API key (CLI or profile)
-    if provider == "gemini":
-        profile_key = cfg.get("model", "api_key") or None
-        if not (args.api_key or profile_key):
-            print("Error: Gemini profile requires --api-key or model.api_key in profile")
-            sys.exit(2)
+    try:
+        cfg = Config.load(args.config)
+        models = cfg.models(args.model)
+    except ConfigurationException as e:
+        logger.error(f"❌ {e}")
+        sys.exit(2)
 
-    # If using default profile (Ollama provider), require base_url via --ollama-url
-    if profile == "default":
-        if not args.ollama_url:
-            print("Error: Default profile requires --ollama-url argument")
-            sys.exit(2)
+    logger.info(f"Config: {cfg.path}")
+    logger.info(f"Starting solver for: {args.path}")
 
-    # Pass CLI-provided api_key and ollama_url into Solver (overrides profile values when provided)
-    solver = Solver(path, api_key=args.api_key, ollama_url=args.ollama_url, debug=args.debug)
-    tries = 0
-    
-    while tries < solver.timeout:
-        try:
-            if tries == 0:
-                logger.info("🔄 Attempt 1: Generating initial solution...")
-                result = solver.begin_chat()
-            else:
-                logger.info(f"🔄 Attempt {tries + 1}: Fixing errors...")
-                result = solver.continue_chat()
-        except SolverException as e:
-            logger.error(f"❌ {e}")
-            exit(1)
-        
-        logger.info("✓ Running validation...")
-        public = solver.validate_public()
-        # Skip secret tests when public ones fail, so the model gets the visible failure details
-        secret = public and solver.validate_secret()
-        
-        if public and secret:
-            logger.info("✅ All tests passed! Solution is correct.")
-            exit(0)
-        
-        tries += 1
-    
-    logger.error(f"❌ Failed after {solver.timeout} attempts")
-    exit(1)
+    results = {}
+    for model in models:
+        logger.info(f"🤖 Model: {model['name']} ({model['provider']} / {model['model']})")
+        results[model["name"]] = solve(args.path, model, args.debug, logger)
+
+    if len(models) > 1:
+        logger.info("📊 Summary:")
+        for name, r in results.items():
+            status = "✅ passed" if r["passed"] else "❌ failed"
+            detail = f" ({r['error']})" if r["error"] else ""
+            logger.info(f"  {name:20} {status} after {r['attempts']} attempt(s){detail}")
+
+    # Exit 0 only if every model solved the problem
+    sys.exit(0 if all(r["passed"] for r in results.values()) else 1)
+
 
 if __name__ == "__main__":
     main()

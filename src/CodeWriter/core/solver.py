@@ -9,7 +9,6 @@ from .client import Client
 from .tester import Tester
 
 from pathlib import Path
-from typing import Optional
 
 import os
 import re
@@ -36,15 +35,14 @@ def extract_code(response: str) -> str:
 
 class Solver:
 
-    def __init__(self, path : str, api_key: Optional[str] = None, ollama_url: Optional[str] = None, debug: bool = False):
+    def __init__(self, path : str, model: dict, debug: bool = False):
+        """model: one entry from Config.models() (provider, model, base_url, api_key, parameters)."""
         self.directory_path = path
         self.client = None
         self.config = Config()
+        self.model = model
+        self.parameters = model["parameters"]
         self.debug = debug
-        # CLI-provided api_key (overrides profile value when set)
-        self._cli_api_key = api_key
-        # CLI-provided ollama_url (overrides profile value when set)
-        self._cli_ollama_url = ollama_url
 
         self.system_path = PROJECT_ROOT + self.config.get("path", "system_path")
         self.user_task_path = PROJECT_ROOT + self.config.get("path", "user_task_path")
@@ -58,7 +56,7 @@ class Solver:
         self.solution_path = path + "/" + self.config.get("path", "source_file")
 
         self.compiler = Compiler()
-        self.timeout  = self.config.get("parameters", "timeout")
+        self.max_attempts = self.parameters["max_attempts"]
         self.runner = Runner()
         self.tester = Tester()
 
@@ -107,20 +105,15 @@ class Solver:
         if self.client is not None:
             raise SolverException("Conversation has been already started.")
 
-        # Get model configuration from settings
-        provider = self.config.get("model", "provider") or "ollama"
-        # Prefer CLI-provided values when available
-        api_key = self._cli_api_key or self.config.get("model", "api_key") or None
-        base_url = self._cli_ollama_url or self.config.get("model", "base_url")
-
+        model = self.model
         self.client = Client(
-            base_url=base_url,
+            base_url=model.get("base_url"),
             system=self.system,
-            model=self.config.get("model", "model"),
-            provider=provider,
-            api_key=api_key,
-            num_ctx=self.config.get("parameters", "num_ctx") or 12288,
-            think=self.config.get("parameters", "think") or False,
+            model=model["model"],
+            provider=model["provider"],
+            api_key=model.get("api_key") or None,
+            num_ctx=self.parameters.get("num_ctx") or 12288,
+            think=self.parameters.get("think") or False,
             debug=self.debug
         )
 

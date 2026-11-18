@@ -8,3 +8,5 @@
 **/main.cpp
 **/main
 **/core
+# Local LLM config (may contain API keys)
+codewriter.json

@@ -43,34 +43,88 @@ Requirements: Docker with Compose, and an LLM: a local [Ollama](https://ollama.c
 docker compose build
 ```
 
-### With Ollama (default profile)
+Then create your config file, `codewriter.json`, in the project root. It says which LLM to use, and the
+program reads its settings only from this file (like `CMakeLists.txt` for CMake):
 
-Start Ollama on your machine and download the model used by the default profile:
+```sh
+cp codewriter.example.json codewriter.json
+```
+
+`codewriter.json` is git-ignored, so it's safe to put an API key in it.
+
+### With Ollama
+
+Start Ollama on your machine and download a model:
 
 ```sh
 ollama serve          # or: brew services start ollama
 ollama pull qwen3:14b
 ```
 
-Then run a problem:
+`codewriter.json`:
 
-```sh
-docker compose run --rm app poetry run python src/main.py resources/factorial \
-    --ollama-url http://host.docker.internal:11434
+```json
+{
+  "model": {
+    "provider": "ollama",
+    "model": "qwen3:14b",
+    "base_url": "http://host.docker.internal:11434"
+  }
+}
 ```
 
-`host.docker.internal` lets the container reach Ollama on your host. If you get `Connection refused`, make
-Ollama listen on all interfaces with `OLLAMA_HOST=0.0.0.0` and restart it.
+`host.docker.internal` lets the container reach Ollama on your host (use `http://localhost:11434` without
+Docker). If you get `Connection refused`, make Ollama listen on all interfaces with `OLLAMA_HOST=0.0.0.0`
+and restart it.
 
 ### With Gemini
 
-```sh
-docker compose run --rm app poetry run python src/main.py resources/factorial \
-    --profile gemini --api-key YOUR_GEMINI_KEY
+`codewriter.json`:
+
+```json
+{
+  "model": {
+    "provider": "gemini",
+    "model": "gemini-3.8-flash",
+    "api_key": "YOUR_GEMINI_KEY"
+  }
+}
 ```
 
-Get a key in [Google AI Studio](https://aistudio.google.com/apikey). Pass it on the command line;
-**don't put it in `config/profiles/gemini.json`**, which is committed to git.
+Get a key in [Google AI Studio](https://aistudio.google.com/apikey).
+
+### Several models
+
+Use `models` (a list) instead of `model` to run the same problem with each model in turn and get a
+summary at the end. `name` identifies an entry (it defaults to the `model` value); an entry's own
+`parameters` override the global ones.
+
+```json
+{
+  "models": [
+    { "name": "qwen", "provider": "ollama", "model": "qwen3:14b", "base_url": "http://host.docker.internal:11434" },
+    { "name": "gemini", "provider": "gemini", "model": "gemini-3.8-flash", "api_key": "YOUR_GEMINI_KEY",
+      "parameters": { "max_attempts": 30 } }
+  ],
+  "parameters": { "max_attempts": 10 }
+}
+```
+
+```
+📊 Summary:
+  qwen                 ❌ failed after 10 attempt(s)
+  gemini               ✅ passed after 2 attempt(s)
+```
+
+`--model qwen` runs only that entry. The exit code is 0 only if every model that ran solved the problem.
+The models run one after another in the same problem folder, so `main.cpp` and `out/` are left from the
+last model.
+
+### Run a problem
+
+```sh
+docker compose run --rm app poetry run python src/main.py resources/factorial
+```
 
 ## Command-line options
 
@@ -81,14 +135,12 @@ python src/main.py <problem_dir> [options]
 | Option | Description |
 |---|---|
 | `problem_dir` | Problem folder, e.g. `resources/skretka` (required) |
-| `--profile NAME` | Config profile from `config/profiles/` (`default` = Ollama, `gemini`) |
-| `--ollama-url URL` | Ollama server URL (required with the `default` profile) |
-| `--api-key KEY` | Gemini API key |
+| `-c`, `--config FILE` | Config file to use (default: `codewriter.json` in the current directory) |
+| `-m`, `--model NAME` | Run only the model with this `name` from the config (default: all of them) |
 | `--debug` | Print the system prompt and every prompt sent to the LLM, with the conversation size |
 | `-v`, `--verbose` | Debug-level logging |
 
-The profile is chosen from `--profile`, then the `CODEWRITER_PROFILE` environment variable, then
-`active_profile` in `config/settings.json`.
+Keep several config files to switch between models, e.g. `--config qwen.json` or `--config gemini.json`.
 
 ## Problems
 
@@ -116,26 +168,24 @@ per test).
 
 ## Configuration
 
-`config/settings.json` holds the defaults, and each file in `config/profiles/` overrides them. The main settings:
+The run is configured by your `codewriter.json`. Anything you leave out comes from the built-in defaults in
+`config/settings.json`, and any key from there can be overridden in `codewriter.json`.
 
 | Setting | Meaning |
 |---|---|
-| `model.provider` | `ollama` or `gemini` |
-| `model.model` | Model name, e.g. `qwen3:14b`, `gemini-3.8-flash` |
-| `model.base_url` | Ollama server URL (overridden by `--ollama-url`) |
-| `parameters.timeout` | **Maximum number of attempts** (not seconds) |
+| `model` or `models` | One model (an object) or several (a list of objects with the keys below) |
+| `model.name` | Name used by `--model` and in the summary (default: the `model` value) |
+| `model.provider` | `ollama` or `gemini` (required) |
+| `model.model` | Model name, e.g. `qwen3:14b`, `gemini-3.8-flash` (required) |
+| `model.base_url` | Ollama server URL (required for Ollama) |
+| `model.api_key` | Gemini API key (required for Gemini) |
+| `model.parameters` | Per-model overrides of `parameters` |
+| `parameters.max_attempts` | Maximum number of attempts (default 10) |
 | `parameters.num_ctx` | Ollama context size in tokens (default 12288). Ollama's own default is often 4096, which silently drops the start of longer conversations. Larger values use more RAM. |
 | `parameters.think` | Enable the model's thinking mode (Ollama) |
 | `environment.compiler`, `environment.flags` | Compiler and flags; also shown to the model in the system prompt |
 
-To manage profiles:
-
-```sh
-python config_manager.py list            # list profiles
-python config_manager.py view gemini     # show a profile
-python config_manager.py switch gemini   # set active_profile in settings.json
-python config_manager.py current         # show the active profile
-```
+The program checks the file at startup and stops with a clear message if a required setting is missing.
 
 ## Debugging a run
 
@@ -152,7 +202,8 @@ On Linux with Python 3.12, `g++` and [Poetry](https://python-poetry.org):
 
 ```sh
 poetry install --no-root
-poetry run python src/main.py resources/factorial --ollama-url http://localhost:11434
+cp codewriter.example.json codewriter.json   # then edit it
+poetry run python src/main.py resources/factorial
 ```
 
 On Arch Linux, `./install.sh` builds a package (via `PKGBUILD`) that installs a `code-writer` command;
@@ -169,7 +220,8 @@ src/CodeWriter/core/
     runner.py                   # runs the binary on a test with a time limit
     tester.py                   # compares output with expected output
 src/CodeWriter/utils/           # config loading, prompt/history, logging, file helpers
-config/                         # settings.json, profiles/, prompts/
+codewriter.example.json         # example config; copy to codewriter.json
+config/                         # settings.json (defaults), prompts/
 resources/                      # problems and their tests
 legacy/                         # earlier C++ prototype (not used)
 ```

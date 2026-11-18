@@ -28,7 +28,7 @@ class Client:
         
         if self.provider == "gemini":
             if not api_key:
-                logger.warning("Gemini provider selected but no API key provided. Set 'api_key' in settings.json.")
+                logger.warning("Gemini provider selected but no API key provided. Set model.api_key in codewriter.json.")
             elif not genai:
                 logger.warning("google-genai package not installed. Install it with: pip install google-genai")
             # API key is passed directly to Client() when needed, no global configure needed
@@ -78,7 +78,7 @@ class Client:
             raise RuntimeError("google-genai package is required for Gemini support. Install with: pip install google-genai")
         
         if not self.api_key:
-            raise ValueError("Gemini API key is required. Set it in settings.json under 'model.api_key'.")
+            raise ValueError("Gemini API key is required. Set model.api_key in codewriter.json.")
 
         logger.info(f"→ Gemini {self.model_name}")
         

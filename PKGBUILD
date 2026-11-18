@@ -43,8 +43,7 @@ package() {
     # This script will live in /usr/bin/code-writer
     cat > "$pkgdir/usr/bin/code-writer" <<EOF
 #!/bin/sh
-# Navigate to the app dir so relative paths for configs work
-cd /opt/$pkgname
+# Run from the caller's directory so ./codewriter.json and relative problem paths resolve there
 # Run using the isolated venv python
 exec /opt/$pkgname/venv/bin/python /opt/$pkgname/src/main.py "\$@"
 EOF

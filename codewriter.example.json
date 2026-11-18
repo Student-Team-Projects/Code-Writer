@@ -1,0 +1,15 @@
+{
+  "models": [
+    {
+      "name": "qwen",
+      "provider": "ollama",
+      "model": "qwen3:14b",
+      "base_url": "http://localhost:11434"
+    }
+  ],
+  "parameters": {
+    "max_attempts": 10,
+    "num_ctx": 12288,
+    "think": false
+  }
+}
